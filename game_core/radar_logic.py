@@ -2,7 +2,7 @@ from lookup_tables import precomputed_angles
 from core.settings import *
 
 
-def radar_pulse(all_ships, all_asteroids, world_width, world_height, passed_ship):
+def radar_pulse(all_ships, all_asteroids, passed_ship):
 
     radar_rays = precomputed_angles.RADAR_DIRECTIONS[passed_ship.radar_resolution]
     signatures = []
@@ -13,7 +13,7 @@ def radar_pulse(all_ships, all_asteroids, world_width, world_height, passed_ship
         ray_x, ray_y = passed_ship.x, passed_ship.y
         hit_found = False
 
-        while (0 < ray_x < world_width and 0 < ray_y < world_height
+        while (0 < ray_x < WORLD_WIDTH and 0 < ray_y < WORLD_HEIGHT
                and ray_distance < RADAR_PULSE_RANGE and not hit_found):
 
             ray_distance += RADAR_PULSE_SPEED

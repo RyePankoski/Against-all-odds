@@ -2,15 +2,14 @@ from game_core.radar_logic import radar_pulse
 from rendering.render_util import *
 from rendering.camera import Camera
 from entities.ship import Ship
-import time
-from networking.network_simulator import NetworkSimulator
 from game_core.ship_logic import *
 from game_core.asteroid_logic import *
 from game_core.projectile_logic import *
+import time
 
 
 class Client:
-    def __init__(self, player_number, is_local_player, screen, clock, fake_net):
+    def __init__(self, player_number, is_local_player, screen, clock, fake_net, connected):
         self.fake_network = fake_net
         self.player_number = player_number
         self.is_local_player = is_local_player
@@ -23,7 +22,7 @@ class Client:
         self.username = ""
         self.password = ""
 
-        self.connected = True
+        self.connected = connected
 
         self.last_active = 0
         self.address = None
@@ -46,6 +45,9 @@ class Client:
 
         self.all_bullets = []
         self.all_missiles = []
+
+        self.cosmetic_projectiles = []
+
         self.all_asteroids = {}
         self.all_ships = []
         self.star_field = self.init_star_field()
@@ -61,9 +63,9 @@ class Client:
 
     def run(self):
 
-        # handle_asteroids(self.all_asteroids)
         handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
         handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
+
         self.collect_bullets(self.ship)
         self.collect_missiles(self.ship)
 
@@ -77,12 +79,14 @@ class Client:
         if self.connected:
             self.send_data_to_server()
             self.get_data_from_server()
+        else:
+            handle_asteroids(self.all_asteroids)
 
     def handle_ship(self):
         self.ship.update()
         check_ship_collisions(self.ship, self.all_asteroids)
         if self.ship.wants_radar_pulse:
-            signatures = radar_pulse(self.all_ships, self.all_asteroids, self.world_width, self.world_height, self.ship)
+            signatures = radar_pulse(self.all_ships, self.all_asteroids, self.ship)
             self.set_radar_signatures(signatures)
             self.ship.wants_radar_pulse = False
 

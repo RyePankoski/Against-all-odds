@@ -77,12 +77,6 @@ class Server:
         ship.update()
         check_ship_collisions(ship, self.all_asteroids)
 
-        # Handle radar pulse if requested
-        if ship.wants_radar_pulse:
-            signatures = radar_pulse(ship, self.all_asteroids, self.all_ships, self.all_missiles, self.all_bullets)
-            # Note: radar signatures will be sent with game state
-            ship.wants_radar_pulse = False
-
     def get_game_state(self):
         """Get current game state to send to clients"""
         state = {

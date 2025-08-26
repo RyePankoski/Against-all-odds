@@ -9,8 +9,8 @@ class NetworkSimulator:
         self.pending_server_messages = []  # (message, delivery_time)
         self.pending_client_messages = []
 
-        self.delay_low = 0.04
-        self.delay_high = 0.08
+        self.delay_low = 0.02
+        self.delay_high = 0.04
 
         # self.delay_low = 2
         # self.delay_high = 4

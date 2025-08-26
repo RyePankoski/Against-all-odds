@@ -8,13 +8,14 @@ pygame.init()
 screen = pygame.display.set_mode(pygame.display.get_desktop_sizes()[0])
 clock = pygame.time.Clock()
 fake_net = NetworkSimulator()
+multiplayer = True
 
 server = Server(fake_net)
-client = Client(1, True, screen, clock, fake_net)
+client = Client(1, True, screen, clock, fake_net, multiplayer)
 
 FPS = 60
-SERVER_HZ = 20  # Server updates 20 times per second
-SERVER_DT = 1 / SERVER_HZ  # Time per server update
+SERVER_HZ = 20
+SERVER_DT = 1 / SERVER_HZ
 
 
 def handle_events():
@@ -36,9 +37,10 @@ def main():
         dt = clock.tick(FPS) / 1000
         running = handle_events()
         server_timer += dt
-        while server_timer >= SERVER_DT:
-            server.run()
-            server_timer -= SERVER_DT
+        if multiplayer:
+            while server_timer >= SERVER_DT:
+                server.run()
+                server_timer -= SERVER_DT
 
         client.run()
         pygame.display.flip()

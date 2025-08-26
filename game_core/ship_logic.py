@@ -76,7 +76,6 @@ def fire_weapon(ship, weapon_type):
         new_bullet = Bullet(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
         ship.bullets.append(new_bullet)
 
-
 def apply_inputs_to_ship(ship, input_data):
     thrust = BOOST_THRUST if input_data.get('shift') and ship.current_boost_fuel > 0 else THRUST
 
