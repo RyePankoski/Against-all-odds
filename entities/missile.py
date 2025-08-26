@@ -31,31 +31,4 @@ class Missile:
 
         self.sector = self.x // SECTOR_SIZE, self.y // SECTOR_SIZE
 
-    def check_for_collisions(self, ships, asteroids):
-        for ship in ships:
-            if ship.owner == self.owner:
-                continue
 
-            distance_squared = ((ship.x - self.x) * (ship.x - self.x) + (ship.y - self.y) * (ship.y - self.y))
-
-            if distance_squared < MISSILE_HIT_RANGE * MISSILE_HIT_RANGE:
-
-                if ship.shield > 0:
-                    ship.shield -= 40
-                    if ship.shield < 0:
-                        ship.shield = 0
-
-                self.alive = False
-                return
-
-        if self.sector in asteroids and asteroids[self.sector]:
-            for asteroid in asteroids[self.sector]:
-
-                distance_squared = ((((asteroid.x - self.x) * (asteroid.x - self.x)) +
-                                     ((asteroid.y - self.y) * (asteroid.y - self.y))) -
-                                    (asteroid.radius * asteroid.radius))
-
-                if distance_squared < MISSILE_HIT_RANGE * MISSILE_HIT_RANGE:
-                    asteroid.alive = False
-                    self.alive = False
-                    return

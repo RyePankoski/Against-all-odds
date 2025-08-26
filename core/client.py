@@ -1,10 +1,15 @@
+import random
+
 from rendering.render_util import *
 from rendering.camera import Camera
 from entities.ship import Ship
+import time
+from networking.network_simulator import NetworkSimulator
 
 
-class Player:
+class Client:
     def __init__(self, player_number, is_local_player, screen, clock):
+        self.fake_network = NetworkSimulator()
         self.player_number = player_number
         self.is_local_player = is_local_player
         self.screen = screen
@@ -44,7 +49,7 @@ class Player:
         self.explosion_events = []
 
         self.camera = Camera(self.screen)
-        self.ship = Ship(WORLD_WIDTH/2, WORLD_HEIGHT/2, self.player_number, self.camera)
+        self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
 
     def run(self):
         self.handle_inputs()
@@ -56,7 +61,46 @@ class Player:
 
     def handle_ship(self):
         self.ship.update()
-        self.ship.check_for_collisions(self.all_asteroids)
+        check_ship_collisions(self.ship, self.all_asteroids)
+
+    def collect_inputs(self):
+        if self.is_local_player:
+            keys = pygame.key.get_pressed()
+            mouse_buttons = pygame.mouse.get_pressed()
+            mouse_screen_pos = pygame.mouse.get_pos()
+            mouse_world_pos = self.camera.screen_to_world(*mouse_screen_pos)
+
+            input_package = {
+                # Movement keys
+                'w': keys[pygame.K_w],
+                'a': keys[pygame.K_a],
+                's': keys[pygame.K_s],
+                'd': keys[pygame.K_d],
+
+                # Action keys
+                'space': keys[pygame.K_SPACE],  # brake
+                'shift': keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT],  # boost
+                'r': keys[pygame.K_r],  # radar pulse
+
+                # Control panel keys
+                'x': keys[pygame.K_x],  # toggle dampening
+                'l': keys[pygame.K_l],  # continuous radar
+
+                # Weapon selection
+                '1': keys[pygame.K_1],  # missile
+                '2': keys[pygame.K_2],  # bullet
+
+                # Mouse input
+                'mouse_left': mouse_buttons[0],  # fire weapon
+                'mouse_world_pos': mouse_world_pos,  # for aiming
+
+                # Timestamp for lag compensation
+                'timestamp': time.time()
+            }
+
+            return input_package
+
+        return None
 
     def handle_inputs(self):
         if self.is_local_player:
@@ -69,9 +113,7 @@ class Player:
         self.all_bullets = game_state[1]
         self.all_ships = game_state[2]
         self.all_asteroids = game_state[3]
-        self.star_field = game_state[4]
-        self.radar_signatures = game_state[5]
-        self.explosion_events = game_state[6]
+        self.explosion_events = game_state[4]
 
     def render(self):
         draw_ships(self.all_ships, self.camera, self.screen)
@@ -86,3 +128,16 @@ class Player:
                           (self.all_ships[0].x, self.all_ships[0].y), self.all_missiles)
         draw_ship_data(self.screen, self.ship)
         draw_fps(self.screen, self.clock)
+
+    def set_radar_signatures(self, signatures):
+        self.radar_signatures = signatures
+
+    def init_star_field(self):
+        star_field = []
+
+        for x in range(0, self.world_width, 50):
+            for y in range(0, self.world_height, 50):
+                if random.random() < 0.005:
+                    star_field.append((x, y, random.uniform(0.5, 7)))
+
+        return star_field

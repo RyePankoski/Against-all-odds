@@ -1,9 +1,6 @@
 import pygame
-from core.settings import *
-import math
-from entities.missile import Missile
-from entities.bullet import Bullet
 from rendering.sprite_manager import SpriteManager
+
 
 
 class Ship:
@@ -73,10 +70,6 @@ class Ship:
         if self.shield < SHIELD_HEALTH and self.can_recharge:
             self.shield += 0.05
 
-        if self.pulsing:
-            self.radar_pulse()
-
-        self.find_angle()
         self.move()
 
         if self.can_fire_missile is False:
@@ -114,7 +107,6 @@ class Ship:
             if self.bullet_recharge_timer > self.bullet_recharge_length:
                 self.can_reload_bullet = True
                 self.bullet_recharge_timer = 0
-
         if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
             self.bullet_ammo += 1
             self.can_reload_bullet = False
@@ -130,9 +122,8 @@ class Ship:
         if can_boost:
             self.current_boost_fuel -= 1
             self.current_boost_fuel = max(0, min(self.current_boost_fuel, BOOST_FUEL))
-
         elif not shift_held and self.current_boost_fuel < BOOST_FUEL:
-            self.current_boost_fuel += 0.01  # Only regenerate when shift not held at all
+            self.current_boost_fuel += 0.01
 
         # Movement
         if keys[pygame.K_w]:
@@ -156,10 +147,10 @@ class Ship:
             self.current_weapon = "bullet"
 
         if mouse_buttons[0] and self.can_fire_missile and self.current_weapon == "missile":
-            self.fire_missile()
+            fire_weapon(self, "missile")
             self.can_fire_missile = False
         if mouse_buttons[0] and self.can_fire_bullet and self.current_weapon == "bullet":
-            self.fire_bullet()
+            fire_weapon(self, "bullet")
             self.can_fire_bullet = False
 
         self.control_panel(keys)
@@ -172,45 +163,6 @@ class Ship:
             if keys[pygame.K_l]:
                 self.pulsing = True
                 self.can_input_controls = False
-
-    def radar_pulse(self):
-        pass
-
-    def fire_missile(self):
-        if self.missile_ammo <= 0:
-            return
-
-        self.missile_ammo -= 1
-
-        angle = math.radians(self.facing_angle) + math.pi
-
-        missile_dy = math.cos(angle)
-        missile_dx = math.sin(angle)
-
-        true_angle = (missile_dx, missile_dy)
-        missile_dx += self.dx
-        missile_dy += self.dy
-
-        new_missile = Missile(self.x, self.y, missile_dx, missile_dy, self.facing_angle, self.owner, true_angle)
-        self.missiles.append(new_missile)
-
-    def fire_bullet(self):
-        if self.bullet_ammo <= 0:
-            return
-
-        self.bullet_ammo -= 1
-
-        angle = math.radians(self.facing_angle) + math.pi
-
-        bullet_dy = math.cos(angle)
-        bullet_dx = math.sin(angle)
-
-        true_angle = (bullet_dx, bullet_dy)
-        bullet_dx += self.dx
-        bullet_dy += self.dy
-
-        new_bullet = Bullet(self.x, self.y, bullet_dx, bullet_dy, self.facing_angle, self.owner, true_angle)
-        self.bullets.append(new_bullet)
 
     def move(self):
         self.acceleration()
@@ -265,46 +217,6 @@ class Ship:
             if self.dy < 0:
                 self.dy += DAMPENING_FORCE
 
-    def find_angle(self):
-        mouseX, mouseY = pygame.mouse.get_pos()
-        world_mouseX, world_mouseY = self.camera.screen_to_world(mouseX, mouseY)
 
-        target_angle = math.degrees(math.atan2(world_mouseX - self.x, world_mouseY - self.y)) + 180
-        diff = target_angle - self.facing_angle
 
-        # Handle angle wrapping (now in degrees)
-        while diff > 180:
-            diff -= 360
-        while diff < -180:
-            diff += 360
 
-        if abs(diff) <= ROTATION_SPEED:
-            self.facing_angle = target_angle
-        else:
-            self.facing_angle += math.copysign(ROTATION_SPEED, diff)
-
-    def check_for_collisions(self, asteroids):
-        if self.sector in asteroids and asteroids[self.sector]:
-            for asteroid in asteroids[self.sector]:
-
-                distance_squared = ((((asteroid.x - self.x) * (asteroid.x - self.x)) +
-                                     ((asteroid.y - self.y) * (asteroid.y - self.y))) -
-                                    (asteroid.radius * asteroid.radius))
-
-                if distance_squared < BULLET_HIT_RANGE * BULLET_HIT_RANGE:
-                    asteroid.alive = False
-
-                    if self.shield > 0:
-                        self.shield -= 60
-                        self.shield = max(0, self.shield)
-
-                        if self.shield == 0:
-                            self.can_recharge = False
-
-                    else:
-                        self.health -= 60
-
-                    self.dx *= -0.4
-                    self.dy *= -0.4
-
-                    return
