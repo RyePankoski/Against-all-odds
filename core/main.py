@@ -2,12 +2,15 @@ import pygame
 import sys
 from server import Server
 from client import Client
+from networking.network_simulator import NetworkSimulator
 
 pygame.init()
 screen = pygame.display.set_mode(pygame.display.get_desktop_sizes()[0])
 clock = pygame.time.Clock()
-server = Server()
-client = Client(1, True, screen, clock)
+fake_net = NetworkSimulator()
+
+server = Server(fake_net)
+client = Client(1, True, screen, clock, fake_net)
 
 FPS = 60
 SERVER_HZ = 20  # Server updates 20 times per second
@@ -26,20 +29,19 @@ def handle_events():
 
 def main():
     running = True
-    server_timer = 0  # Accumulator for server updates
+    server_timer = 0
 
     while running:
-        dt = clock.tick(FPS) / 1000  # Delta time in seconds
+        screen.fill((0, 0, 0))
+        dt = clock.tick(FPS) / 1000
         running = handle_events()
-
-        # Update server at fixed interval
         server_timer += dt
         while server_timer >= SERVER_DT:
             server.run()
             server_timer -= SERVER_DT
 
-        # Client runs every frame for smooth rendering
         client.run()
+        pygame.display.flip()
 
     pygame.quit()
     sys.exit()

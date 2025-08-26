@@ -1,4 +1,9 @@
 from game_core.object_handling import *
+from core.settings import *
+from entities.asteroid import Asteroid
+import random
+
+
 def handle_asteroids(all_asteroids):
     asteroids_to_remove = []
     asteroids_to_relocate = []
@@ -24,3 +29,21 @@ def handle_asteroids(all_asteroids):
 
     if asteroids_to_remove:
         remove_objects(asteroids_to_remove, all_asteroids)
+
+
+def generate_some_asteroids():
+    asteroids = {}
+    for _ in range(100):
+        sectorX = (WORLD_WIDTH / 2 + 200) // SECTOR_SIZE
+        sectorY = (WORLD_HEIGHT / 2 + 200) // SECTOR_SIZE
+
+        asteroid = Asteroid(WORLD_WIDTH / 2 + 200, WORLD_HEIGHT / 2 + 200,
+                            random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(30, 100),
+                            (WORLD_WIDTH, WORLD_HEIGHT), (sectorX, sectorY))
+
+        if (sectorX, sectorY) in asteroids:
+            asteroids[(sectorX, sectorY)].append(asteroid)
+        else:
+            asteroids[(sectorX, sectorY)] = [asteroid]
+
+    return asteroids

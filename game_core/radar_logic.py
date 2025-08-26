@@ -3,6 +3,7 @@ from core.settings import *
 
 
 def radar_pulse(all_ships, all_asteroids, world_width, world_height, passed_ship):
+
     radar_rays = precomputed_angles.RADAR_DIRECTIONS[passed_ship.radar_resolution]
     signatures = []
     ray_collision_distance = RADAR_DETECT_RANGE * RADAR_DETECT_RANGE

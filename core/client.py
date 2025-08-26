@@ -1,15 +1,17 @@
-import random
-
+from game_core.radar_logic import radar_pulse
 from rendering.render_util import *
 from rendering.camera import Camera
 from entities.ship import Ship
 import time
 from networking.network_simulator import NetworkSimulator
+from game_core.ship_logic import *
+from game_core.asteroid_logic import *
+from game_core.projectile_logic import *
 
 
 class Client:
-    def __init__(self, player_number, is_local_player, screen, clock):
-        self.fake_network = NetworkSimulator()
+    def __init__(self, player_number, is_local_player, screen, clock, fake_net):
+        self.fake_network = fake_net
         self.player_number = player_number
         self.is_local_player = is_local_player
         self.screen = screen
@@ -20,7 +22,9 @@ class Client:
 
         self.username = ""
         self.password = ""
+
         self.connected = True
+
         self.last_active = 0
         self.address = None
         self.port = None
@@ -44,24 +48,76 @@ class Client:
         self.all_missiles = []
         self.all_asteroids = {}
         self.all_ships = []
-        self.star_field = []
+        self.star_field = self.init_star_field()
         self.radar_signatures = []
         self.explosion_events = []
 
         self.camera = Camera(self.screen)
         self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
+        self.all_ships.append(self.ship)
+
+        if not self.connected:
+            self.all_asteroids = generate_some_asteroids()
 
     def run(self):
-        self.handle_inputs()
+
+        # handle_asteroids(self.all_asteroids)
+        handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
+        handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
+        self.collect_bullets(self.ship)
+        self.collect_missiles(self.ship)
+
         self.handle_ship()
+        apply_inputs_to_ship(self.ship, self.collect_inputs())
 
         if self.is_local_player:
             self.camera.follow_target(self.ship.x, self.ship.y)
             self.render()
 
+        if self.connected:
+            self.send_data_to_server()
+            self.get_data_from_server()
+
     def handle_ship(self):
         self.ship.update()
         check_ship_collisions(self.ship, self.all_asteroids)
+        if self.ship.wants_radar_pulse:
+            signatures = radar_pulse(self.all_ships, self.all_asteroids, self.world_width, self.world_height, self.ship)
+            self.set_radar_signatures(signatures)
+            self.ship.wants_radar_pulse = False
+
+    def send_data_to_server(self):
+        inputs = self.collect_inputs()
+
+        if len(inputs) > 0:
+            pass
+
+        if inputs:
+            message = {
+                'player_id': self.player_number,
+                'input_data': inputs,
+                'timestamp': time.time()
+            }
+            self.fake_network.send_to_server(message)
+
+    def get_data_from_server(self):
+        server_messages = self.fake_network.get_client_messages()
+
+        if len(server_messages) > 0:
+            pass
+
+        for message in server_messages:
+            self.all_ships = message.get('ships', self.all_ships)
+            self.all_missiles = message.get('missiles', self.all_missiles)
+            self.all_bullets = message.get('bullets', self.all_bullets)
+            self.all_asteroids = message.get('asteroids', self.all_asteroids)
+            self.explosion_events.extend(message.get('explosions', []))
+
+            # Update ship reference
+            for ship in self.all_ships:
+                if ship.owner == self.player_number:
+                    self.ship = ship
+                    break
 
     def collect_inputs(self):
         if self.is_local_player:
@@ -102,27 +158,15 @@ class Client:
 
         return None
 
-    def handle_inputs(self):
-        if self.is_local_player:
-            keys = pygame.key.get_pressed()
-            mouse_buttons = pygame.mouse.get_pressed()
-            self.ship.handle_ship_inputs(keys, mouse_buttons)
-
-    def inject_data(self, game_state):
-        self.all_missiles = game_state[0]
-        self.all_bullets = game_state[1]
-        self.all_ships = game_state[2]
-        self.all_asteroids = game_state[3]
-        self.explosion_events = game_state[4]
-
     def render(self):
-        draw_ships(self.all_ships, self.camera, self.screen)
         draw_stars(self.star_field, self.camera, self.screen, WORLD_WIDTH, WORLD_HEIGHT)
+        draw_ships(self.all_ships, self.camera, self.screen)
         draw_missiles(self.all_missiles, self.camera, self.screen)
         draw_bullets(self.all_bullets, self.camera, self.screen)
         draw_asteroids(self.all_asteroids, self.camera, self.screen, WORLD_WIDTH, WORLD_HEIGHT)
 
         draw_explosions(self.screen, self.explosion_events, self.camera)
+        self.explosion_events.clear()
 
         draw_radar_screen(self.screen, self.radar_signatures,
                           (self.all_ships[0].x, self.all_ships[0].y), self.all_missiles)
@@ -141,3 +185,13 @@ class Client:
                     star_field.append((x, y, random.uniform(0.5, 7)))
 
         return star_field
+
+    def collect_missiles(self, ship):
+        new_missiles = ship.missiles
+        self.all_missiles.extend(new_missiles)
+        ship.missiles.clear()
+
+    def collect_bullets(self, ship):
+        new_bullets = ship.bullets
+        self.all_bullets.extend(new_bullets)
+        ship.bullets.clear()

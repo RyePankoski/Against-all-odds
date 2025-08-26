@@ -76,3 +76,51 @@ def fire_weapon(ship, weapon_type):
         new_bullet = Bullet(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
         ship.bullets.append(new_bullet)
 
+
+def apply_inputs_to_ship(ship, input_data):
+    thrust = BOOST_THRUST if input_data.get('shift') and ship.current_boost_fuel > 0 else THRUST
+
+    if input_data.get('w'):
+        ship.dy -= thrust
+    if input_data.get('a'):
+        ship.dx -= thrust
+    if input_data.get('s'):
+        ship.dy += thrust
+    if input_data.get('d'):
+        ship.dx += thrust
+    if input_data.get('space'):
+        ship.brake()
+
+    # Handle boost fuel
+    if input_data.get('shift') and ship.current_boost_fuel > 0:
+        ship.current_boost_fuel -= 1
+        ship.current_boost_fuel = max(0, ship.current_boost_fuel)
+    elif not input_data.get('shift') and ship.current_boost_fuel < BOOST_FUEL:
+        ship.current_boost_fuel += 0.01
+
+    # Weapon selection
+    if input_data.get('1'):
+        ship.current_weapon = "missile"
+    if input_data.get('2'):
+        ship.current_weapon = "bullet"
+
+    # Firing
+    if input_data.get('mouse_left'):
+        if ship.current_weapon == "missile" and ship.can_fire_missile:
+            fire_weapon(ship, "missile")
+            ship.can_fire_missile = False
+        elif ship.current_weapon == "bullet" and ship.can_fire_bullet:
+            fire_weapon(ship, "bullet")
+            ship.can_fire_bullet = False
+
+    # Control panel
+    if input_data.get('x') and ship.can_input_controls:
+        ship.dampening_active = not ship.dampening_active
+        ship.can_input_controls = False
+    if input_data.get('r') and ship.can_pulse:
+        ship.wants_radar_pulse = True
+        ship.can_pulse = False
+
+    # Update ship facing angle based on mouse position
+    if input_data.get('mouse_world_pos'):
+        update_ship_facing(ship, input_data['mouse_world_pos'])

@@ -1,26 +1,54 @@
 from queue import Queue
 
+import time
+import random
+
 
 class NetworkSimulator:
     def __init__(self):
-        self.client_to_server_queue = Queue()
-        self.server_to_client_queue = Queue()
+        self.pending_server_messages = []  # (message, delivery_time)
+        self.pending_client_messages = []
+
+        self.delay_low = 0.04
+        self.delay_high = 0.08
+
+        # self.delay_low = 2
+        # self.delay_high = 4
 
     def send_to_server(self, message):
-        self.client_to_server_queue.put(message)
-
-    def send_to_client(self, message):
-        self.server_to_client_queue.put(message)
+        delay = random.uniform(self.delay_low, self.delay_high)  # 20-40ms
+        delivery_time = time.time() + delay
+        self.pending_server_messages.append((message, delivery_time))
 
     def get_server_messages(self):
-        messages = []
-        while not self.client_to_server_queue.empty():
-            messages.append(self.client_to_server_queue.get())
-        return messages
+        current_time = time.time()
+        ready_messages = []
+        still_pending = []
+
+        for message, delivery_time in self.pending_server_messages:
+            if current_time >= delivery_time:
+                ready_messages.append(message)
+            else:
+                still_pending.append((message, delivery_time))
+
+        self.pending_server_messages = still_pending
+        return ready_messages
+
+    def send_to_client(self, message):
+        delay = random.uniform(self.delay_low, self.delay_high)  # 20-40ms
+        delivery_time = time.time() + delay
+        self.pending_client_messages.append((message, delivery_time))
 
     def get_client_messages(self):
-        messages = []
-        while not self.server_to_client_queue.empty():
-            messages.append(self.server_to_client_queue.get())
-        return messages
+        current_time = time.time()
+        ready_messages = []
+        still_pending = []
 
+        for message, delivery_time in self.pending_client_messages:
+            if current_time >= delivery_time:
+                ready_messages.append(message)
+            else:
+                still_pending.append((message, delivery_time))
+
+        self.pending_client_messages = still_pending
+        return ready_messages

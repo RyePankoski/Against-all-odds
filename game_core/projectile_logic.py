@@ -1,6 +1,8 @@
 from core.settings import *
 from game_core.object_handling import *
-def handle_missiles(all_missiles, all_ships, all_asteroids, explosion_events, world_width, world_height):
+
+
+def handle_missiles(all_missiles, all_ships, all_asteroids, explosion_events):
     missiles_to_remove = []
 
     for missile in all_missiles:
@@ -13,15 +15,15 @@ def handle_missiles(all_missiles, all_ships, all_asteroids, explosion_events, wo
             continue
 
         # Remove missiles that are way outside the world
-        if (missile.x < -100 or missile.x > world_width + 100 or
-                missile.y < -100 or missile.y > world_height + 100):
+        if (missile.x < -100 or missile.x > WORLD_WIDTH + 100 or
+                missile.y < -100 or missile.y > WORLD_HEIGHT + 100):
             missiles_to_remove.append(missile)
 
     if missiles_to_remove:
         remove_objects(missiles_to_remove, all_missiles)
 
 
-def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events, world_width, world_height):
+def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
     bullets_to_remove = []
 
     for bullet in all_bullets:
@@ -33,8 +35,8 @@ def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events, worl
             bullets_to_remove.append(bullet)
             continue
 
-        if (bullet.x < -100 or bullet.x > world_width + 100 or
-                bullet.y < -100 or bullet.y > world_height + 100):
+        if (bullet.x < -100 or bullet.x > WORLD_WIDTH + 100 or
+                bullet.y < -100 or bullet.y > WORLD_HEIGHT + 100):
             bullets_to_remove.append(bullet)
 
     if bullets_to_remove:

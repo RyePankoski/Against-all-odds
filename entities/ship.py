@@ -1,5 +1,7 @@
 import pygame
 from rendering.sprite_manager import SpriteManager
+from core.settings import *
+from game_core.ship_logic import *
 
 
 
@@ -114,56 +116,6 @@ class Ship:
             self.missile_ammo += 1
             self.can_reload_missile = False
 
-    def handle_ship_inputs(self, keys, mouse_buttons):
-        shift_held = keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT]
-        can_boost = shift_held and self.current_boost_fuel > 0
-        current_thrust = BOOST_THRUST if can_boost else THRUST
-
-        if can_boost:
-            self.current_boost_fuel -= 1
-            self.current_boost_fuel = max(0, min(self.current_boost_fuel, BOOST_FUEL))
-        elif not shift_held and self.current_boost_fuel < BOOST_FUEL:
-            self.current_boost_fuel += 0.01
-
-        # Movement
-        if keys[pygame.K_w]:
-            self.dy -= current_thrust
-        if keys[pygame.K_a]:
-            self.dx -= current_thrust
-        if keys[pygame.K_s]:
-            self.dy += current_thrust
-        if keys[pygame.K_d]:
-            self.dx += current_thrust
-        if keys[pygame.K_SPACE]:
-            self.brake()
-        if keys[pygame.K_r]:
-            if self.can_pulse:
-                self.wants_radar_pulse = True
-                self.can_pulse = False
-
-        if keys[pygame.K_1]:
-            self.current_weapon = "missile"
-        if keys[pygame.K_2]:
-            self.current_weapon = "bullet"
-
-        if mouse_buttons[0] and self.can_fire_missile and self.current_weapon == "missile":
-            fire_weapon(self, "missile")
-            self.can_fire_missile = False
-        if mouse_buttons[0] and self.can_fire_bullet and self.current_weapon == "bullet":
-            fire_weapon(self, "bullet")
-            self.can_fire_bullet = False
-
-        self.control_panel(keys)
-
-    def control_panel(self, keys):
-        if self.can_input_controls:
-            if keys[pygame.K_x]:
-                self.dampening_active = not self.dampening_active
-                self.can_input_controls = False
-            if keys[pygame.K_l]:
-                self.pulsing = True
-                self.can_input_controls = False
-
     def move(self):
         self.acceleration()
         self.dampening()
@@ -182,13 +134,13 @@ class Ship:
 
     def check_bounds(self):
         if self.x > WORLD_WIDTH:
-            self.x = WORLD_HEIGHT
+            self.x = WORLD_WIDTH
             self.dx *= -0.5
         elif self.x < 0:
             self.x = 0
             self.dx *= -0.5
 
-        if self.y > WORLD_WIDTH:
+        if self.y > WORLD_HEIGHT:
             self.y = WORLD_HEIGHT
             self.dy *= -0.5
         elif self.y < 0:
