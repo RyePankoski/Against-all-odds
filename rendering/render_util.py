@@ -49,11 +49,6 @@ def draw_ships(ships, camera, screen):
             screen.blit(shield_surface, (screen_x - 50, screen_y - 50))
 
 
-def draw_explosion(screen, camera, x, y):
-    screen_x, screen_y = camera.world_to_screen(x, y)
-    pygame.draw.circle(screen, YELLOW, (screen_x, screen_y), 50)
-
-
 def draw_stars(stars, camera, screen, width, height):
     for star in stars:
         screen_x, screen_y = camera.world_to_screen(star[0], star[1])
@@ -213,3 +208,10 @@ def draw_fps(screen, clock):
     fps = f"帧率:{clock.get_fps():.1f}"
     fps_text = font.render(fps, True, GREEN)
     screen.blit(fps_text, (50, 500))
+
+
+def draw_explosions(screen, explosions, camera):
+    for explosion in explosions:
+        if camera.is_visible(explosion[0], explosion[1]):
+            screen_x, screen_y = camera.world_to_screen(explosion[0], explosion[1])
+            pygame.draw.circle(screen, explosion[2], (screen_x, screen_y), explosion[3])

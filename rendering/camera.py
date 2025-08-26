@@ -1,13 +1,14 @@
 import pygame
 import math
+from core.settings import *
 
 
 class Camera:
-    def __init__(self, screen_width, screen_height, world_width, world_height, screen):
-        self.screen_width = screen_width
-        self.screen_height = screen_height
-        self.world_width = world_width
-        self.world_height = world_height
+    def __init__(self, screen):
+        self.screen_width = screen.get_width()
+        self.screen_height = screen.get_height()
+        self.world_width = WORLD_WIDTH
+        self.world_height = WORLD_HEIGHT
         self.screen = screen
 
         # Camera position in world coordinates
@@ -32,8 +33,8 @@ class Camera:
         self.y = desired_y
 
         # Option 2: Smooth camera (uncomment to use)
-        # self.x += (desired_x - self.x) * self.smoothing
-        # self.y += (desired_y - self.y) * self.smoothing
+        self.x += (desired_x - self.x) * self.smoothing
+        self.y += (desired_y - self.y) * self.smoothing
 
     def world_to_screen(self, world_x, world_y):
         """Convert world coordinates to screen coordinates"""

@@ -1,9 +1,5 @@
 import random
-import pygame
-from entities.ship import Ship
-from rendering.camera import Camera
 from rendering.render_util import *
-from rendering.render_util import draw_ship_data
 from core.settings import *
 from entities.asteroid import Asteroid
 from lookup_tables import precomputed_angles
@@ -25,37 +21,33 @@ class StateManager:
         self.all_missiles = []
         self.all_bullets = []
         self.radar_signatures = []
-        self.asteroid_explosion_events = []
+        self.explosion_events = []
         self.players = []
 
         self.all_asteroids = {}
 
-        self.width, self.height = pygame.display.get_desktop_sizes()[0]
-        self.angle_interval = 0
-
-        # Create a much larger world
         self.world_width = WORLD_WIDTH
         self.world_height = WORLD_HEIGHT
         self.star_field = self.init_star_field()
 
-        # Create camera
-        self.camera = Camera(self.width, self.height, self.world_width, self.world_height, self.screen)
+        playerOne = Player(1, True, self.screen, self.clock)
+        playerTwo = Player(2, False, self.screen, self.clock)
 
-        # Place ships in world coordinates
-        player1Ship = Ship(self.world_width / 2, self.world_height / 2, 1, self.camera)
-        player2Ship = Ship(self.world_width / 2 + 1000, self.world_height / 2 + 700, 2, self.camera)
-
-        playerOne = Player(player1Ship, 1, True, self.screen, self.camera, self.clock)
-        playerTwo = Player(player2Ship, 2, False, self.screen, self.camera, self.clock)
+        self.all_ships.append(playerOne.ship)
+        self.all_ships.append(playerTwo.ship)
 
         self.players.append(playerOne)
-        'h'
         self.players.append(playerTwo)
 
-        self.all_ships.append(player1Ship)
-        self.all_ships.append(player2Ship)
-
         self.generate_some_asteroids()
+
+    def run(self):
+        self.screen.fill(BLACK)
+        self.update_players()
+        self.handle_missiles()
+        self.handle_bullets()
+        self.handle_asteroids()
+        pygame.display.flip()
 
     def update_players(self):
         for player in self.players:
@@ -73,33 +65,17 @@ class StateManager:
             ship.wants_radar_pulse = False
 
     def collect_data(self):
-        return (self.all_missiles.copy(),
-                self.all_bullets.copy(),
-                self.all_ships.copy(),
-                self.all_asteroids.copy(),
-                self.star_field.copy(),
-                self.radar_signatures.copy()
-                )
+        state = (self.all_missiles.copy(),
+                 self.all_bullets.copy(),
+                 self.all_ships.copy(),
+                 self.all_asteroids.copy(),
+                 self.star_field.copy(),
+                 self.radar_signatures.copy(),
+                 self.explosion_events.copy()
+                 )
+        self.explosion_events.clear()
 
-    def run(self):
-        self.screen.fill(BLACK)
-
-        player1 = None
-        for ship in self.all_ships:
-            if ship.owner == 1:
-                player1 = ship
-                break
-
-        if player1:
-            self.camera.follow_target(player1.x, player1.y)
-
-        self.update_players()
-
-        # self.handle_ships()
-        self.handle_missiles()
-        self.handle_bullets()
-        self.handle_asteroids()
-        pygame.display.flip()
+        return state
 
     def collect_missiles(self, ship):
         new_missiles = ship.missiles
@@ -119,6 +95,71 @@ class StateManager:
 
         if len(ships_to_remove) > 0:
             remove_objects(ships_to_remove, self.all_ships)
+
+    def handle_missiles(self):
+        missiles_to_remove = []
+
+        for missile in self.all_missiles:
+            missile.handle_self()
+            missile.check_for_collisions(self.all_ships, self.all_asteroids)
+
+            if missile.alive is False:
+                missiles_to_remove.append(missile)
+                self.explosion_events.append((missile.x, missile.y, YELLOW, 100))
+                continue
+
+            # Remove missiles that are way outside the world
+            if (missile.x < -100 or missile.x > self.world_width + 100 or
+                    missile.y < -100 or missile.y > self.world_height + 100):
+                missiles_to_remove.append(missile)
+
+        if len(missiles_to_remove) > 0:
+            remove_objects(missiles_to_remove, self.all_missiles)
+
+    def handle_bullets(self):
+        bullets_to_remove = []
+
+        for bullet in self.all_bullets:
+            bullet.handle_self()
+            bullet.check_for_collisions(self.all_ships, self.all_asteroids)
+
+            if bullet.alive is False:
+                self.explosion_events.append((bullet.x, bullet.y, CYAN, 10))
+                bullets_to_remove.append(bullet)
+                continue
+
+            if (bullet.x < -100 or bullet.x > self.world_width + 100 or
+                    bullet.y < -100 or bullet.y > self.world_height + 100):
+                bullets_to_remove.append(bullet)
+
+        if len(bullets_to_remove) > 0:
+            remove_objects(bullets_to_remove, self.all_bullets)
+
+    def handle_asteroids(self):
+        asteroids_to_remove = []
+        asteroids_to_relocate = []
+
+        for sector, asteroid_list in self.all_asteroids.items():
+            for asteroid in asteroid_list[:]:  # Copy list to avoid modification during iteration
+                old_sector = asteroid.sector
+                asteroid.float_on()
+                new_sector = asteroid.sector
+
+                if asteroid.alive is False:
+                    asteroids_to_remove.append(asteroid)
+                elif old_sector != new_sector:
+                    asteroids_to_relocate.append((asteroid, old_sector, new_sector))
+
+        for asteroid, old_sector, new_sector in asteroids_to_relocate:
+            if old_sector in self.all_asteroids:
+                self.all_asteroids[old_sector].remove(asteroid)
+
+            if new_sector not in self.all_asteroids:
+                self.all_asteroids[new_sector] = []
+            self.all_asteroids[new_sector].append(asteroid)
+
+        if len(asteroids_to_remove) > 0:
+            self.remove_asteroids(asteroids_to_remove)
 
     def radar_pulse(self, passed_ship):
         radar_rays = precomputed_angles.RADAR_DIRECTIONS[passed_ship.radar_resolution]
@@ -162,73 +203,6 @@ class StateManager:
 
         self.radar_signatures = signatures
 
-    def handle_missiles(self):
-        missiles_to_remove = []
-
-        for missile in self.all_missiles:
-            missile.handle_self()
-            missile.check_for_collisions(self.all_ships, self.all_asteroids)
-
-            if missile.alive is False:
-                if self.camera.is_visible(missile.x, missile.y):
-                    draw_explosion(self.screen, self.camera, missile.x, missile.y)
-                missiles_to_remove.append(missile)
-                continue
-
-            # Remove missiles that are way outside the world
-            if (missile.x < -100 or missile.x > self.world_width + 100 or
-                    missile.y < -100 or missile.y > self.world_height + 100):
-                missiles_to_remove.append(missile)
-
-        if len(missiles_to_remove) > 0:
-            remove_objects(missiles_to_remove, self.all_missiles)
-
-    def handle_bullets(self):
-        bullets_to_remove = []
-
-        for bullet in self.all_bullets:
-            bullet.handle_self()
-            bullet.check_for_collisions(self.all_ships, self.all_asteroids)
-
-            if bullet.alive is False:
-                if self.camera.is_visible(bullet.x, bullet.y):
-                    draw_explosion(self.screen, self.camera, bullet.x, bullet.y)
-                bullets_to_remove.append(bullet)
-                continue
-
-            if (bullet.x < -100 or bullet.x > self.world_width + 100 or
-                    bullet.y < -100 or bullet.y > self.world_height + 100):
-                bullets_to_remove.append(bullet)
-
-        if len(bullets_to_remove) > 0:
-            remove_objects(bullets_to_remove, self.all_bullets)
-
-    def handle_asteroids(self):
-        asteroids_to_remove = []
-        asteroids_to_relocate = []
-
-        for sector, asteroid_list in self.all_asteroids.items():
-            for asteroid in asteroid_list[:]:  # Copy list to avoid modification during iteration
-                old_sector = asteroid.sector
-                asteroid.float_on()
-                new_sector = asteroid.sector
-
-                if asteroid.alive is False:
-                    asteroids_to_remove.append(asteroid)
-                elif old_sector != new_sector:
-                    asteroids_to_relocate.append((asteroid, old_sector, new_sector))
-
-        for asteroid, old_sector, new_sector in asteroids_to_relocate:
-            if old_sector in self.all_asteroids:
-                self.all_asteroids[old_sector].remove(asteroid)
-
-            if new_sector not in self.all_asteroids:
-                self.all_asteroids[new_sector] = []
-            self.all_asteroids[new_sector].append(asteroid)
-
-        if len(asteroids_to_remove) > 0:
-            self.remove_asteroids(asteroids_to_remove)
-
     def remove_asteroids(self, asteroids_to_remove):
         asteroids_to_remove_set = set(asteroids_to_remove)
 
@@ -258,6 +232,3 @@ class StateManager:
                 self.all_asteroids[(sectorX, sectorY)].append(asteroid)
             else:
                 self.all_asteroids[(sectorX, sectorY)] = [asteroid]
-
-
-

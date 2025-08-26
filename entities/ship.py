@@ -229,15 +229,15 @@ class Ship:
         self.sector = (sector_x, sector_y)
 
     def check_bounds(self):
-        if self.x > self.camera.world_width:
-            self.x = self.camera.world_width
+        if self.x > WORLD_WIDTH:
+            self.x = WORLD_HEIGHT
             self.dx *= -0.5
         elif self.x < 0:
             self.x = 0
             self.dx *= -0.5
 
-        if self.y > self.camera.world_height:
-            self.y = self.camera.world_height
+        if self.y > WORLD_WIDTH:
+            self.y = WORLD_HEIGHT
             self.dy *= -0.5
         elif self.y < 0:
             self.y = 0

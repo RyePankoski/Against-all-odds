@@ -1,21 +1,17 @@
-import pygame
 from rendering.render_util import *
 from rendering.camera import Camera
+from entities.ship import Ship
 
 
 class Player:
-    def __init__(self, ship, player_number, is_local_player, screen, camera, clock):
-        self.ship = ship
+    def __init__(self, player_number, is_local_player, screen, clock):
         self.player_number = player_number
         self.is_local_player = is_local_player
         self.screen = screen
-        self.camera = camera
         self.clock = clock
 
         self.world_width = WORLD_WIDTH
         self.world_height = WORLD_HEIGHT
-
-        # self.camera = Camera
 
         self.username = ""
         self.password = ""
@@ -45,12 +41,18 @@ class Player:
         self.all_ships = []
         self.star_field = []
         self.radar_signatures = []
+        self.explosion_events = []
+
+        self.camera = Camera(self.screen)
+        self.ship = Ship(WORLD_WIDTH/2, WORLD_HEIGHT/2, self.player_number, self.camera)
 
     def run(self):
         self.handle_inputs()
         self.handle_ship()
-        self.render()
-        pass
+
+        if self.is_local_player:
+            self.camera.follow_target(self.ship.x, self.ship.y)
+            self.render()
 
     def handle_ship(self):
         self.ship.update()
@@ -69,6 +71,7 @@ class Player:
         self.all_asteroids = game_state[3]
         self.star_field = game_state[4]
         self.radar_signatures = game_state[5]
+        self.explosion_events = game_state[6]
 
     def render(self):
         draw_ships(self.all_ships, self.camera, self.screen)
@@ -76,13 +79,10 @@ class Player:
         draw_missiles(self.all_missiles, self.camera, self.screen)
         draw_bullets(self.all_bullets, self.camera, self.screen)
         draw_asteroids(self.all_asteroids, self.camera, self.screen, WORLD_WIDTH, WORLD_HEIGHT)
+
+        draw_explosions(self.screen, self.explosion_events, self.camera)
+
         draw_radar_screen(self.screen, self.radar_signatures,
                           (self.all_ships[0].x, self.all_ships[0].y), self.all_missiles)
         draw_ship_data(self.screen, self.ship)
-
         draw_fps(self.screen, self.clock)
-
-
-
-
-
