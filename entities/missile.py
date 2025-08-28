@@ -36,5 +36,3 @@ class Missile:
         self.y += self.dy + (self.true_dy * self.velocity)
 
         self.sector = self.x // SECTOR_SIZE, self.y // SECTOR_SIZE
-
-

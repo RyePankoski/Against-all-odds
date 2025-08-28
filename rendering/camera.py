@@ -53,4 +53,3 @@ class Camera:
         screen_x, screen_y = self.world_to_screen(world_x, world_y)
         return (-margin <= screen_x <= self.screen_width + margin and
                 -margin <= screen_y <= self.screen_height + margin)
-

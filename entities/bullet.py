@@ -23,11 +23,9 @@ class Bullet:
         self.fly()
 
     def fly(self):
-
         self.prev_x = self.x
         self.prev_y = self.y
 
         self.x += self.dx + (self.true_dx * self.velocity)
         self.y += self.dy + (self.true_dy * self.velocity)
         self.sector = self.x // SECTOR_SIZE, self.y // SECTOR_SIZE
-

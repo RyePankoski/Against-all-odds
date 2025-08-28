@@ -120,5 +120,6 @@ MAX_BULLETS = 300
 BULLET_SPEED = 30
 BULLET_HIT_RANGE = 20
 
+
 class Settings:
     pass

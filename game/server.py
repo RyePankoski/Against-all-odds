@@ -1,10 +1,7 @@
 import time
 from entities.ship import Ship
-
-from networking.network_simulator import NetworkSimulator
 from shared_util.projectile_logic import *
 from shared_util.asteroid_logic import *
-from shared_util.radar_logic import *
 from shared_util.object_handling import *
 from shared_util.ship_logic import *
 
@@ -20,7 +17,7 @@ class Server:
 
         self.all_asteroids = generate_some_asteroids()
 
-        ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)  
+        ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)
         ship2 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, None)
         self.all_ships = [ship1, ship2]
 
