@@ -72,8 +72,8 @@ class Client:
                 handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
                 handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
                 apply_inputs_to_ship(self.ship, self.collect_inputs())
-            self.send_data_to_server()
-            self.get_data_from_server()
+                self.send_data_to_server()
+                self.get_data_from_server()
         else:
             handle_asteroids(self.all_asteroids)
 
@@ -172,7 +172,7 @@ class Client:
 
     def render(self):
         draw_stars_tiled(self.star_tiles, self.camera, self.screen,
-                   self.camera.screen_width, self.camera.screen_width)
+                         self.camera.screen_width, self.camera.screen_width)
         draw_ships(self.all_ships, self.camera, self.screen)
         draw_missiles(self.all_missiles, self.camera, self.screen)
         draw_bullets(self.all_bullets, self.camera, self.screen)

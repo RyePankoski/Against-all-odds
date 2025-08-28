@@ -38,7 +38,7 @@ def draw_stars_tiled(star_tiles, camera, screen, width, height):
 
     # Calculate which tiles we need to cover the screen
     # Add extra padding to ensure full coverage
-    padding = TILE_SIZE
+    padding = TILE_SIZE * 2
     screen_left = camera_x - width // 2 - padding
     screen_right = camera_x + width // 2 + padding
     screen_top = camera_y - height // 2 - padding
