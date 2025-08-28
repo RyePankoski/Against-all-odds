@@ -1,5 +1,3 @@
-import pygame
-import math
 from game.settings import *
 
 

@@ -1,5 +1,3 @@
-from queue import Queue
-
 import time
 import random
 

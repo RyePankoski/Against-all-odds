@@ -15,7 +15,7 @@ class SpriteManager:
     def __init__(self):
         if not SpriteManager._initialized:
             self.sprites = {}
-            self.base_path = Path(__file__).parent.parent  # Go up to project root
+            self.base_path = Path(__file__).parent.parent
             self.load_sprites()
             SpriteManager._initialized = True
 
@@ -54,6 +54,5 @@ class SpriteManager:
 
     @classmethod
     def reload_sprites(cls):
-        """Reload all sprites (useful for development)"""
         if cls._instance:
             cls._instance.load_sprites()

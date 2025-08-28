@@ -1,5 +1,4 @@
 from game.settings import *
-import math
 
 
 def check_ship_collisions(ship, asteroids):
@@ -28,7 +27,6 @@ def check_ship_collisions(ship, asteroids):
 
 
 def update_ship_facing(ship, mouse_world_pos):
-    """Update ship facing angle based on mouse world position"""
     import math
 
     mouse_x, mouse_y = mouse_world_pos
@@ -49,7 +47,6 @@ def update_ship_facing(ship, mouse_world_pos):
 
 
 def fire_weapon(ship, weapon_type):
-    """Fire weapon based on ship facing angle"""
     import math
     from entities.missile import Missile
     from entities.bullet import Bullet
@@ -75,6 +72,7 @@ def fire_weapon(ship, weapon_type):
         ship.bullet_ammo -= 1
         new_bullet = Bullet(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
         ship.bullets.append(new_bullet)
+
 
 def apply_inputs_to_ship(ship, input_data):
     thrust = BOOST_THRUST if input_data.get('shift') and ship.current_boost_fuel > 0 else THRUST

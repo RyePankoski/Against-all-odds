@@ -84,6 +84,3 @@ def check_projectile_collisions(projectile, ships, asteroids):
 
                     if asteroid.health <= 0:
                         asteroid.alive = False
-
-
-
