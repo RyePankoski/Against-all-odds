@@ -42,7 +42,7 @@ def main():
         server_timer += dt
         if multiplayer:
             if server_timer >= SERVER_DT:
-                server.run(server_timer) 
+                server.run(server_timer)
                 server_timer = 0
 
         client.run(dt)

@@ -20,31 +20,31 @@ class Ship:
         self.current_boost_fuel = BOOST_FUEL
 
         self.fire_missile_timer = 0
-        self.fire_missile_cooldown = 40/60
+        self.fire_missile_cooldown = 40 / 60
         self.can_fire_missile = True
 
         self.fire_bullet_timer = 0
-        self.fire_bullet_cooldown = 2/60
+        self.fire_bullet_cooldown = 2 / 60
         self.can_fire_bullet = True
 
         self.control_panel_timer = 0
-        self.control_panel_cooldown = 10/60
+        self.control_panel_cooldown = 10 / 60
         self.can_input_controls = True
 
         self.radar_timer = 0
-        self.radar_cooldown = 100
+        self.radar_cooldown = 100 / 60
         self.can_pulse = True
 
         self.shield_pause_timer = 0
-        self.shield_pause_length = 200/60
+        self.shield_pause_length = 200 / 60
         self.can_recharge = True
 
         self.bullet_recharge_timer = 0
-        self.bullet_recharge_length = 25/60
+        self.bullet_recharge_length = 25 / 60
         self.can_reload_bullet = False
 
         self.missile_recharge_time = 0
-        self.missile_recharge_length = 300/60
+        self.missile_recharge_length = 300 / 60
         self.can_reload_missile = False
 
         self.alive = True

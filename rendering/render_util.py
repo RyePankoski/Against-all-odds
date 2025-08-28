@@ -29,42 +29,32 @@ def generate_star_tiles():
 
 def draw_stars_tiled(star_tiles, camera, screen, width, height):
     camera_x, camera_y = camera.x, camera.y
-    padding = TILE_SIZE * 2
+
+    # Increase padding to ensure smooth edges
+    padding = TILE_SIZE * 3  # Increased from 2
     screen_left = camera_x - width // 2 - padding
     screen_right = camera_x + width // 2 + padding
     screen_top = camera_y - height // 2 - padding
     screen_bottom = camera_y + height // 2 + padding
 
-    # Calculate tile grid positions (use floor division)
-    start_tile_x = int(screen_left // TILE_SIZE)
-    if screen_left < 0 and screen_left % TILE_SIZE != 0:
-        start_tile_x -= 1
+    # Simplify tile range calculation - use floor division consistently
+    start_tile_x = int(screen_left // TILE_SIZE) - 1  # Extra buffer
+    end_tile_x = int(screen_right // TILE_SIZE) + 2  # Extra buffer
+    start_tile_y = int(screen_top // TILE_SIZE) - 1  # Extra buffer
+    end_tile_y = int(screen_bottom // TILE_SIZE) + 2  # Extra buffer
 
-    end_tile_x = int(screen_right // TILE_SIZE) + 3
-
-    start_tile_y = int(screen_top // TILE_SIZE)
-    if screen_top < 0 and screen_top % TILE_SIZE != 0:
-        start_tile_y -= 1
-
-    end_tile_y = int(screen_bottom // TILE_SIZE) + 3
-
-    # Draw tiles
+    # Draw tiles without visibility check (let pygame handle clipping)
     for tile_x in range(start_tile_x, end_tile_x):
         for tile_y in range(start_tile_y, end_tile_y):
-            # Choose random tile based on position (deterministic)
             tile_index = hash((tile_x, tile_y)) % len(star_tiles)
             tile_surface = star_tiles[tile_index]
 
-            # Calculate world position for this tile
             tile_world_x = tile_x * TILE_SIZE
             tile_world_y = tile_y * TILE_SIZE
-
-            # Convert to screen coordinates
             screen_x, screen_y = camera.world_to_screen(tile_world_x, tile_world_y)
 
-            # Only blit if tile is visible
-            if camera.is_visible(tile_world_x + TILE_SIZE // 2, tile_world_y + TILE_SIZE // 2):
-                screen.blit(tile_surface, (screen_x, screen_y))
+            # Remove the is_visible check - it's causing the popping
+            screen.blit(tile_surface, (screen_x, screen_y))
 
 
 def draw_missiles(missiles, camera, screen):
