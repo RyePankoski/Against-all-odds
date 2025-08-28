@@ -3,6 +3,7 @@ from game.settings import *
 
 class Bullet:
     def __init__(self, x, y, dx, dy, angle, owner, true_angle):
+        self.name = "bullet"
         self.x = x
         self.y = y
         self.prev_x = x
@@ -18,7 +19,7 @@ class Bullet:
         self.velocity = BULLET_SPEED
         self.alive = True
 
-    def handle_self(self):
+    def update(self):
         self.fly()
 
     def fly(self):

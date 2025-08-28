@@ -94,6 +94,7 @@ class Client:
         if self.ship.wants_radar_pulse:
             signatures = radar_pulse(self.all_ships, self.all_asteroids, self.ship)
             self.set_radar_signatures(signatures)
+            self.ship.can_pulse = False
             self.ship.wants_radar_pulse = False
 
     def send_data_to_server(self):

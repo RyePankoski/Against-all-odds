@@ -3,6 +3,7 @@ from game.settings import *
 
 class Missile:
     def __init__(self, x, y, dx, dy, angle, owner, true_angle):
+        self.name = "missile"
         self.x = x
         self.y = y
         self.prev_x = x
@@ -19,7 +20,7 @@ class Missile:
         self.fuel = MISSILE_FUEL
         self.alive = True
 
-    def handle_self(self):
+    def update(self):
         self.fly()
 
     def fly(self):

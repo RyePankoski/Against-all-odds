@@ -10,6 +10,7 @@ class Asteroid:
         self.radius = radius
         self.world_dimensions = world_dim
         self.sector = sector
+        self.health = 100
 
         self.alive = True
 

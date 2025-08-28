@@ -24,7 +24,7 @@ class Ship:
         self.can_fire_missile = True
 
         self.fire_bullet_timer = 0
-        self.fire_bullet_cooldown = 2 / 60
+        self.fire_bullet_cooldown = 5 / 60
         self.can_fire_bullet = True
 
         self.control_panel_timer = 0
@@ -48,7 +48,6 @@ class Ship:
         self.can_reload_missile = False
 
         self.alive = True
-        self.pulsing = False
         self.dampening_active = True
 
         self.radar_signatures = []

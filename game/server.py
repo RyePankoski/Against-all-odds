@@ -20,7 +20,7 @@ class Server:
 
         self.all_asteroids = generate_some_asteroids()
 
-        ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)  # No camera
+        ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)  
         ship2 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, None)
         self.all_ships = [ship1, ship2]
 
@@ -44,7 +44,6 @@ class Server:
         self.send_state_to_all_clients()
 
     def process_network_inputs(self):
-        """Process all incoming input messages from clients"""
         input_messages = self.fake_network.get_server_messages()
 
         for message in input_messages:
@@ -60,15 +59,12 @@ class Server:
             apply_inputs_to_ship(ship, input_data)
 
     def get_ship_by_player_id(self, player_id):
-        """Find ship belonging to a specific player"""
         for ship in self.all_ships:
             if ship.owner == player_id:
                 return ship
         return None
 
     def handle_player_ship(self, ship, dt):
-        """Handle a single player's ship"""
-        # Collect projectiles fired by this ship
         self.collect_missiles(ship)
         self.collect_bullets(ship)
 
@@ -77,7 +73,6 @@ class Server:
         check_ship_collisions(ship, self.all_asteroids)
 
     def get_game_state(self):
-        """Get current game state to send to clients"""
         state = {
             'missiles': self.all_missiles.copy(),
             'bullets': self.all_bullets.copy(),
@@ -90,27 +85,21 @@ class Server:
         return state
 
     def send_state_to_all_clients(self):
-        """Send game state to all connected clients"""
         game_state = self.get_game_state()
 
-        # For now, send same state to all clients
-        # Later you might customize per client
         self.fake_network.send_to_client(game_state)
 
     def collect_missiles(self, ship):
-        """Collect missiles fired by a ship"""
         new_missiles = ship.missiles
         self.all_missiles.extend(new_missiles)
         ship.missiles.clear()
 
     def collect_bullets(self, ship):
-        """Collect bullets fired by a ship"""
         new_bullets = ship.bullets
         self.all_bullets.extend(new_bullets)
         ship.bullets.clear()
 
     def handle_ships(self):
-        """Remove dead ships"""
         ships_to_remove = []
         for ship in self.all_ships:
             if not ship.alive:
