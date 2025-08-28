@@ -81,12 +81,16 @@ class Client:
         self.get_data_from_server()
 
     def handle_objects(self, dt):
+        ship = self.ship
+        if ship is None:
+            return
+
         self.handle_ship(dt)
-        self.collect_bullets(self.ship)
-        self.collect_missiles(self.ship)
+        apply_inputs_to_ship(ship, self.collect_inputs())
+        self.collect_bullets(ship)
+        self.collect_missiles(ship)
         handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
         handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
-        apply_inputs_to_ship(self.ship, self.collect_inputs())
 
     def handle_ship(self, dt):
         self.ship.update(dt)
@@ -96,6 +100,8 @@ class Client:
             self.set_radar_signatures(signatures)
             self.ship.can_pulse = False
             self.ship.wants_radar_pulse = False
+        if self.ship.health <= 0:
+            self.ship = None
 
     def send_data_to_server(self):
         inputs = self.collect_inputs()
