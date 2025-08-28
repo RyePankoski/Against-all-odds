@@ -2,6 +2,82 @@ import pygame
 from core.settings import *
 from rendering.sprite_manager import SpriteManager
 import math
+import random
+
+
+def generate_star_tiles():
+    """Generate pre-rendered star tile surfaces"""
+    tiles = []
+    MIN_STAR_SIZE = 1
+    MAX_STAR_SIZE = 5
+    NUM_TILE_VARIATIONS = 10
+
+    for tile_id in range(NUM_TILE_VARIATIONS):
+        # Create transparent surface for this tile
+        tile_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
+
+        # Use tile_id as seed for consistent patterns
+        tile_random = random.Random(tile_id)
+
+        # Draw stars onto this tile surface
+        for _ in range(20):
+            x = tile_random.randint(0, TILE_SIZE - 1)
+            y = tile_random.randint(0, TILE_SIZE - 1)
+            size = tile_random.uniform(MIN_STAR_SIZE, MAX_STAR_SIZE)
+
+            pygame.draw.circle(tile_surface, WHITE, (x, y), int(size))
+
+        tiles.append(tile_surface)
+
+    return tiles
+
+
+def draw_stars_tiled(star_tiles, camera, screen, width, height):
+    """Draw star tiles by blitting surfaces with random rotations"""
+    camera_x, camera_y = camera.x, camera.y
+
+    # Calculate which tiles we need to cover the screen
+    # Add extra padding to ensure full coverage
+    padding = TILE_SIZE
+    screen_left = camera_x - width // 2 - padding
+    screen_right = camera_x + width // 2 + padding
+    screen_top = camera_y - height // 2 - padding
+    screen_bottom = camera_y + height // 2 + padding
+
+    # Calculate tile grid positions (use floor division)
+    start_tile_x = int(screen_left // TILE_SIZE)
+    if screen_left < 0 and screen_left % TILE_SIZE != 0:
+        start_tile_x -= 1
+
+    end_tile_x = int(screen_right // TILE_SIZE) + 3
+
+    start_tile_y = int(screen_top // TILE_SIZE)
+    if screen_top < 0 and screen_top % TILE_SIZE != 0:
+        start_tile_y -= 1
+
+    end_tile_y = int(screen_bottom // TILE_SIZE) + 3
+
+    # Draw tiles
+    for tile_x in range(start_tile_x, end_tile_x):
+        for tile_y in range(start_tile_y, end_tile_y):
+            # Choose tile pattern and rotation based on position (deterministic)
+            tile_seed = hash((tile_x, tile_y)) & 0x7FFFFFFF
+            tile_random = random.Random(tile_seed)
+
+            # Choose random tile based on position (deterministic)
+            tile_index = hash((tile_x, tile_y)) % len(star_tiles)
+            tile_surface = star_tiles[tile_index]
+
+            # Calculate world position for this tile
+            tile_world_x = tile_x * TILE_SIZE
+            tile_world_y = tile_y * TILE_SIZE
+
+            # Convert to screen coordinates
+            screen_x, screen_y = camera.world_to_screen(tile_world_x, tile_world_y)
+
+            # Only blit if tile is visible
+            if camera.is_visible(tile_world_x + TILE_SIZE // 2, tile_world_y + TILE_SIZE // 2):
+                screen.blit(tile_surface, (screen_x, screen_y))
 
 
 def draw_missiles(missiles, camera, screen):
@@ -49,15 +125,6 @@ def draw_ships(ships, camera, screen):
             screen.blit(shield_surface, (screen_x - 50, screen_y - 50))
 
 
-def draw_stars(stars, camera, screen, width, height):
-    for star in stars:
-        screen_x, screen_y = camera.world_to_screen(star[0], star[1])
-
-        # Only draw if visible on screen
-        if 0 <= screen_x <= width and 0 <= screen_y <= height:
-            pygame.draw.circle(screen, WHITE, (int(screen_x), int(screen_y)), int(star[2]))
-
-
 def draw_asteroids(asteroid_sectors, camera, screen, width, height):
     if not asteroid_sectors:  # Handle empty or None dict
         return
@@ -76,7 +143,7 @@ def draw_asteroids(asteroid_sectors, camera, screen, width, height):
                 pygame.draw.circle(screen, DARK_GRAY, (int(screen_x), int(screen_y)), asteroid.radius)
 
 
-def draw_ship_data(screen, ship):
+def draw_ship_data(screen, ship, font):
     if ship.owner != 1:  # Only show for player 1
         return
 
@@ -87,7 +154,6 @@ def draw_ship_data(screen, ship):
     pygame.draw.rect(screen, (0, 255, 0), (panel_x, panel_y, panel_width, panel_height), 2)
 
     # CRT-style font
-    font = pygame.font.SysFont('microsoftyahei', 20)  # Microsoft YaHei # SimHei (common on Windows)
     green = (0, 255, 0)
     yellow = (255, 255, 0)
     red = (255, 100, 100)
@@ -203,8 +269,7 @@ def draw_radar_screen(screen, signatures, ship_pos, missiles):
             pygame.draw.circle(screen, RED, (int(screen_x), int(screen_y)), 1)
 
 
-def draw_fps(screen, clock):
-    font = pygame.font.SysFont('microsoftyahei', 20)  # Microsoft YaHei # SimHei (common on Windows)
+def draw_fps(screen, clock, font):
     fps = f"帧率:{clock.get_fps():.1f}"
     fps_text = font.render(fps, True, GREEN)
     screen.blit(fps_text, (50, 500))

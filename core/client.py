@@ -1,4 +1,3 @@
-
 from shared_util.radar_logic import radar_pulse
 from rendering.render_util import *
 from rendering.camera import Camera
@@ -51,8 +50,7 @@ class Client:
         self.radar_signatures = []
         self.explosion_events = []
 
-        self.tile_size = 1024
-        self.star_tiles = generate_star_tiles(self.tile_size)
+        self.star_tiles = generate_star_tiles()
 
         self.camera = Camera(self.screen)
         self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
@@ -172,8 +170,7 @@ class Client:
         return None
 
     def render(self):
-        draw_stars(self.star_tiles, self.camera, self.screen,
-                   self.camera.screen_width, self.camera.screen_width, self.tile_size)
+        draw_stars_tiled(self.star_tiles, self.camera, self.screen, self.camera.screen_width, self.camera.screen_height)
         draw_ships(self.all_ships, self.camera, self.screen)
         draw_missiles(self.all_missiles, self.camera, self.screen)
         draw_bullets(self.all_bullets, self.camera, self.screen)
