@@ -15,29 +15,20 @@ def generate_star_tiles():
     for tile_id in range(NUM_TILE_VARIATIONS):
         # Create transparent surface for this tile
         tile_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
-
         # Use tile_id as seed for consistent patterns
         tile_random = random.Random(tile_id)
-
         # Draw stars onto this tile surface
         for _ in range(20):
             x = tile_random.randint(0, TILE_SIZE - 1)
             y = tile_random.randint(0, TILE_SIZE - 1)
             size = tile_random.uniform(MIN_STAR_SIZE, MAX_STAR_SIZE)
-
             pygame.draw.circle(tile_surface, WHITE, (x, y), int(size))
-
         tiles.append(tile_surface)
-
     return tiles
 
 
 def draw_stars_tiled(star_tiles, camera, screen, width, height):
-    """Draw star tiles by blitting surfaces with random rotations"""
     camera_x, camera_y = camera.x, camera.y
-
-    # Calculate which tiles we need to cover the screen
-    # Add extra padding to ensure full coverage
     padding = TILE_SIZE * 2
     screen_left = camera_x - width // 2 - padding
     screen_right = camera_x + width // 2 + padding
@@ -60,10 +51,6 @@ def draw_stars_tiled(star_tiles, camera, screen, width, height):
     # Draw tiles
     for tile_x in range(start_tile_x, end_tile_x):
         for tile_y in range(start_tile_y, end_tile_y):
-            # Choose tile pattern and rotation based on position (deterministic)
-            tile_seed = hash((tile_x, tile_y)) & 0x7FFFFFFF
-            tile_random = random.Random(tile_seed)
-
             # Choose random tile based on position (deterministic)
             tile_index = hash((tile_x, tile_y)) % len(star_tiles)
             tile_surface = star_tiles[tile_index]

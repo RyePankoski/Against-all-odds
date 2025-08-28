@@ -10,8 +10,8 @@ pygame.init()
 screen = pygame.display.set_mode(pygame.display.get_desktop_sizes()[0])
 clock = pygame.time.Clock()
 fake_net = NetworkSimulator()
-multiplayer = True
-simulation = False
+multiplayer = False
+simulation = True
 
 server = Server(fake_net)
 client = Client(1, True, screen, clock, fake_net, multiplayer, simulation)

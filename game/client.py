@@ -63,32 +63,30 @@ class Client:
             self.all_asteroids = generate_some_asteroids()
 
     def run(self, dt):
-
         if self.connected:
             if self.simulation is True:
-                self.handle_ship(dt)
-                self.collect_bullets(self.ship)
-                self.collect_missiles(self.ship)
-                handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
-                handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
-                apply_inputs_to_ship(self.ship, self.collect_inputs())
-            self.send_data_to_server()
-            self.get_data_from_server()
+                self.handle_objects(dt)
+            self.handle_data()
         else:
             handle_asteroids(self.all_asteroids)
-
-            self.handle_ship(dt)
-            self.collect_bullets(self.ship)
-            self.collect_missiles(self.ship)
-            handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
-            handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
-            apply_inputs_to_ship(self.ship, self.collect_inputs())
-            self.send_data_to_server()
-            self.get_data_from_server()
+            self.handle_objects(dt)
+            self.handle_data()
 
         if self.is_local_player:
             self.camera.follow_target(self.ship.x, self.ship.y)
             self.render()
+
+    def handle_data(self):
+        self.send_data_to_server()
+        self.get_data_from_server()
+
+    def handle_objects(self, dt):
+        self.handle_ship(dt)
+        self.collect_bullets(self.ship)
+        self.collect_missiles(self.ship)
+        handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
+        handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
+        apply_inputs_to_ship(self.ship, self.collect_inputs())
 
     def handle_ship(self, dt):
         self.ship.update(dt)
