@@ -60,6 +60,8 @@ Input        Message Queue   State Auth
 ## Running the Game
 
 ```bash
+pip install pygame
+
 python main.py
 ```
 
