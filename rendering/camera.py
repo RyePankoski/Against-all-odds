@@ -1,6 +1,6 @@
 import pygame
 import math
-from core.settings import *
+from game.settings import *
 
 
 class Camera:

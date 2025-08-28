@@ -1,5 +1,5 @@
 import pygame
-from core.settings import *
+from game.settings import *
 from rendering.sprite_manager import SpriteManager
 import math
 import random

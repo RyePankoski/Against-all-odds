@@ -1,4 +1,4 @@
-from core.settings import *
+from game.settings import *
 import math
 
 

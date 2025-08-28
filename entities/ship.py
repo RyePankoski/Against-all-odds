@@ -1,6 +1,6 @@
 import pygame
 from rendering.sprite_manager import SpriteManager
-from core.settings import *
+from game.settings import *
 from game_core.ship_logic import *
 
 
@@ -104,6 +104,7 @@ class Ship:
             if self.missile_recharge_time > self.missile_recharge_length:
                 self.can_reload_missile = True
                 self.missile_recharge_time = 0
+
         if self.can_reload_bullet is False:
             self.bullet_recharge_timer += dt
             if self.bullet_recharge_timer > self.bullet_recharge_length:
