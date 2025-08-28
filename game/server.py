@@ -30,7 +30,7 @@ class Server:
 
         # Update all ships
         for ship in self.all_ships:
-            self.handle_player_ship(ship)
+            self.handle_player_ship(ship, dt)
 
         # Handle game objects
         handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
@@ -52,7 +52,6 @@ class Server:
             input_data = message.get('input_data')
             timestamp = message.get('timestamp')
 
-            # Find the ship belonging to this player
             ship = self.get_ship_by_player_id(player_id)
             if not ship:
                 continue
@@ -67,14 +66,14 @@ class Server:
                 return ship
         return None
 
-    def handle_player_ship(self, ship):
+    def handle_player_ship(self, ship, dt):
         """Handle a single player's ship"""
         # Collect projectiles fired by this ship
         self.collect_missiles(ship)
         self.collect_bullets(ship)
 
         # Update ship state
-        ship.update()
+        ship.update(dt)
         check_ship_collisions(ship, self.all_asteroids)
 
     def get_game_state(self):
