@@ -1,4 +1,3 @@
-
 from shared_util.radar_logic import radar_pulse
 from rendering.render_util import *
 from rendering.camera import Camera

@@ -64,7 +64,7 @@ class Ship:
         self.missile_ammo = MAX_MISSILES
         self.bullet_ammo = MAX_BULLETS
 
-    def update(self):
+    def update(self, dt):
         if self.health <= 0:
             self.alive = False
             return
@@ -75,40 +75,41 @@ class Ship:
         self.move()
 
         if self.can_fire_missile is False:
-            self.fire_missile_timer += 1
+            self.fire_missile_timer += dt
             if self.fire_missile_timer > self.fire_missile_cooldown:
                 self.can_fire_missile = True
                 self.fire_missile_timer = 0
         if self.can_fire_bullet is False:
-            self.fire_bullet_timer += 1
+            self.fire_bullet_timer += dt
             if self.fire_bullet_timer > self.fire_bullet_cooldown:
                 self.can_fire_bullet = True
                 self.fire_bullet_timer = 0
         if self.can_input_controls is False:
-            self.control_panel_timer += 1
+            self.control_panel_timer += dt
             if self.control_panel_timer > self.control_panel_cooldown:
                 self.can_input_controls = True
                 self.control_panel_timer = 0
         if self.can_pulse is False:
-            self.radar_timer += 1
+            self.radar_timer += dt
             if self.radar_timer > self.radar_cooldown:
                 self.can_pulse = True
                 self.radar_timer = 0
         if self.can_recharge is False:
-            self.shield_pause_timer += 1
+            self.shield_pause_timer += dt
             if self.shield_pause_timer > self.shield_pause_length:
                 self.can_recharge = True
                 self.shield_pause_timer = 0
         if self.can_reload_missile is False:
-            self.missile_recharge_time += 1
+            self.missile_recharge_time += dt
             if self.missile_recharge_time > self.missile_recharge_length:
                 self.can_reload_missile = True
                 self.missile_recharge_time = 0
         if self.can_reload_bullet is False:
-            self.bullet_recharge_timer += 1
+            self.bullet_recharge_timer += dt
             if self.bullet_recharge_timer > self.bullet_recharge_length:
                 self.can_reload_bullet = True
                 self.bullet_recharge_timer = 0
+
         if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
             self.bullet_ammo += 1
             self.can_reload_bullet = False
