@@ -63,45 +63,46 @@ class Client:
             self.all_asteroids = generate_some_asteroids()
 
     def run(self, dt):
-        if self.connected:
-            if self.simulation is True:
-                self.handle_objects(dt)
-            self.handle_data()
-        else:
-            handle_asteroids(self.all_asteroids)
-            self.handle_objects(dt)
-            self.handle_data()
+        # Update game objects
+        if self.ship:
+            inputs = self.collect_inputs()
 
-        if self.is_local_player:
-            self.camera.follow_target(self.ship.x, self.ship.y)
-            self.render()
+            # Ship logic
+            self.ship.update(dt)
+            apply_inputs_to_ship(self.ship, inputs)
+            check_ship_collisions(self.ship, self.all_asteroids)
 
-    def handle_data(self):
-        self.send_data_to_server()
-        self.get_data_from_server()
+            # Radar
+            if self.ship.wants_radar_pulse:
+                self.radar_signatures = radar_pulse(self.all_ships, self.all_asteroids, self.ship)
+                self.ship.can_pulse = False
+                self.ship.wants_radar_pulse = False
 
-    def handle_objects(self, dt):
-        ship = self.ship
-        if ship is None:
-            return
+            # Collect projectiles
+            self.all_bullets.extend(self.ship.bullets)
+            self.all_missiles.extend(self.ship.missiles)
+            self.ship.bullets.clear()
+            self.ship.missiles.clear()
 
-        self.handle_ship(dt)
-        apply_inputs_to_ship(ship, self.collect_inputs())
-        self.collect_bullets(ship)
-        self.collect_missiles(ship)
+            if self.ship.health <= 0:
+                self.ship = None
+
+        # Update projectiles and asteroids
         handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
         handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
 
-    def handle_ship(self, dt):
-        self.ship.update(dt)
-        check_ship_collisions(self.ship, self.all_asteroids)
-        if self.ship.wants_radar_pulse:
-            signatures = radar_pulse(self.all_ships, self.all_asteroids, self.ship)
-            self.set_radar_signatures(signatures)
-            self.ship.can_pulse = False
-            self.ship.wants_radar_pulse = False
-        if self.ship.health <= 0:
-            self.ship = None
+        if not self.connected:
+            handle_asteroids(self.all_asteroids)
+
+        # Networking
+        if self.connected:
+            self.send_data_to_server()
+            self.get_data_from_server()
+
+        # Render
+        if self.is_local_player:
+            self.camera.follow_target(self.ship.x, self.ship.y)
+            self.render()
 
     def send_data_to_server(self):
         inputs = self.collect_inputs()
@@ -173,8 +174,6 @@ class Client:
 
             return input_package
 
-        return None
-
     def render(self):
         draw_stars_tiled(self.star_tiles, self.camera, self.screen,
                          self.camera.screen_width, self.camera.screen_width)
@@ -190,19 +189,6 @@ class Client:
                           (self.all_ships[0].x, self.all_ships[0].y), self.all_missiles)
         draw_ship_data(self.screen, self.ship, self.ui_font)
         draw_fps(self.screen, self.clock, self.ui_font)
-
-    def set_radar_signatures(self, signatures):
-        self.radar_signatures = signatures
-
-    def init_star_field(self):
-        star_field = []
-
-        for x in range(0, self.world_width, 50):
-            for y in range(0, self.world_height, 50):
-                if random.random() < 0.005:
-                    star_field.append((x, y, random.uniform(0.5, 7)))
-
-        return star_field
 
     def collect_missiles(self, ship):
         new_missiles = ship.missiles

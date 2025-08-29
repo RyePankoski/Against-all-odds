@@ -10,11 +10,11 @@ pygame.init()
 screen = pygame.display.set_mode(pygame.display.get_desktop_sizes()[0])
 clock = pygame.time.Clock()
 fake_net = NetworkSimulator()
-multiplayer = False
-simulation = True
+connected = True
+simulation = False
 
 server = Server(fake_net)
-client = Client(1, True, screen, clock, fake_net, multiplayer, simulation)
+client = Client(1, True, screen, clock, fake_net, connected, simulation)
 
 FPS = 60
 SERVER_HZ = 20
@@ -40,7 +40,7 @@ def main():
         dt = clock.tick(FPS) / 1000
         running = handle_events()
         server_timer += dt
-        if multiplayer:
+        if connected:
             if server_timer >= SERVER_DT:
                 server.run(server_timer)
                 server_timer = 0
