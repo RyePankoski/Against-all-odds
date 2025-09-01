@@ -75,6 +75,7 @@ def fire_weapon(ship, weapon_type):
 
 
 def apply_inputs_to_ship(ship, input_data):
+
     thrust = BOOST_THRUST if input_data.get('shift') and ship.current_boost_fuel > 0 else THRUST
 
     if input_data.get('w'):
@@ -119,5 +120,5 @@ def apply_inputs_to_ship(ship, input_data):
         ship.can_pulse = False
 
     # Update ship facing angle based on mouse position
-    if input_data.get('mouse_world_pos'):
+    if 'mouse_world_pos' in input_data:
         update_ship_facing(ship, input_data['mouse_world_pos'])

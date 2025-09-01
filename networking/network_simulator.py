@@ -4,7 +4,7 @@ import random
 
 class NetworkSimulator:
     def __init__(self):
-        self.pending_server_messages = []  # (message, delivery_time)
+        self.pending_server_messages = []
         self.pending_client_messages = []
 
         self.delay_low = 0.02
@@ -14,7 +14,7 @@ class NetworkSimulator:
         # self.delay_high = 4
 
     def send_to_server(self, message):
-        delay = random.uniform(self.delay_low, self.delay_high)  # 20-40ms
+        delay = random.uniform(self.delay_low, self.delay_high)
         delivery_time = time.time() + delay
         self.pending_server_messages.append((message, delivery_time))
 
