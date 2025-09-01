@@ -1,4 +1,5 @@
-# Multiplayer Asteroids
+# Networked Systems Demo: Deterministic Multiplayer Architecture in Python
+
 
 A networked multiplayer asteroids game built in Python with Pygame, featuring deterministic client-server architecture and realistic network simulation.
 
