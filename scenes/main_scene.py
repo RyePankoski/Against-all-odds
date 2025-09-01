@@ -88,8 +88,8 @@ class MainScene:
             handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
             handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
 
-        # Render
-        self.camera.follow_target(self.ship.x, self.ship.y)
+        if self.ship:
+            self.camera.follow_target(self.ship.x, self.ship.y)
         self.render()
 
     def render(self):
