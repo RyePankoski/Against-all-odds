@@ -28,12 +28,12 @@ class Client:
             self.run_scene(inputs, dt)
 
     def run_scene(self, inputs, dt):
-        self.main_scene.inject_inputs(inputs)
-        self.main_scene.run(dt)
-
         if self.connected:
             self.send_data_to_server(inputs)
             self.get_data_from_server()
+
+        self.main_scene.inject_inputs(inputs)
+        self.main_scene.run(dt)
 
     def send_data_to_server(self, inputs):
         if len(inputs) > 0:
@@ -48,25 +48,7 @@ class Client:
             self.fake_net.send_to_server(message)
 
     def get_data_from_server(self):
-        server_messages = self.fake_net.get_client_messages()
-
-        if len(server_messages) > 0:
-            pass
-
-        for message in server_messages:
-            self.main_scene.all_ships = message.get('ships', self.main_scene.all_ships)
-            self.main_scene.all_missiles = message.get('missiles', self.main_scene.all_missiles)
-            self.main_scene.all_bullets = message.get('bullets', self.main_scene.all_bullets)
-            self.main_scene.all_asteroids = message.get('asteroids', self.main_scene.all_asteroids)
-            self.main_scene.explosion_events.extend(message.get('explosions', []))
-
-            ships = message.get('ships', [])
-
-            for ship in ships:
-                if ship.owner == self.main_scene.player_number:
-                    self.main_scene.ship.x = ship.x
-                    self.main_scene.ship.y = ship.y
-                    break
+        self.main_scene.inject_server_data(self.fake_net.get_client_messages())
 
     def collect_inputs(self):
         keys = pygame.key.get_pressed()

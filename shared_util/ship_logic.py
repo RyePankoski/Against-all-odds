@@ -20,8 +20,8 @@ def check_ship_collisions(ship, asteroids):
                 else:
                     ship.health -= 60
 
-                ship.dx *= -0.4
-                ship.dy *= -0.4
+                ship.dx *= -0.8
+                ship.dy *= -0.8
 
                 return
 

@@ -62,11 +62,9 @@ class MainScene:
             self.all_asteroids = generate_some_asteroids()
 
     def run(self, dt):
-        # Update game objects
         if self.ship:
             self.ship.update(dt)
             apply_inputs_to_ship(self.ship, self.inputs)
-            check_ship_collisions(self.ship, self.all_asteroids)
 
             # Radar
             if self.ship.wants_radar_pulse:
@@ -74,19 +72,18 @@ class MainScene:
                 self.ship.can_pulse = False
                 self.ship.wants_radar_pulse = False
 
-            # Collect projectiles
-            self.all_bullets.extend(self.ship.bullets)
-            self.all_missiles.extend(self.ship.missiles)
-            self.ship.bullets.clear()
-            self.ship.missiles.clear()
-
             if self.ship.health <= 0:
                 self.ship = None
 
         if not self.connected:
+            check_ship_collisions(self.ship, self.all_asteroids)
             handle_asteroids(self.all_asteroids)
             handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
             handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
+            self.all_bullets.extend(self.ship.bullets)
+            self.all_missiles.extend(self.ship.missiles)
+            self.ship.bullets.clear()
+            self.ship.missiles.clear()
 
         if self.ship:
             self.camera.follow_target(self.ship.x, self.ship.y)
@@ -121,4 +118,40 @@ class MainScene:
     def inject_inputs(self, inputs):
         self.inputs = inputs
 
+    def inject_server_data(self, server_messages):
+        for message in server_messages:
+            self.all_ships = message.get('ships', self.all_ships)
+            self.all_missiles = message.get('missiles', self.all_missiles)
+            self.all_bullets = message.get('bullets', self.all_bullets)
+            self.all_asteroids = message.get('asteroids', self.all_asteroids)
+            self.explosion_events.extend(message.get('explosions', []))
 
+            ships = message.get('ships', [])
+
+            for ship in ships:
+                if ship.owner == self.player_number:
+                    self.ship.shield = ship.shield
+                    self.ship.health = ship.health
+
+                    self.interpolate(ship)
+                    break
+
+    def interpolate(self, ship):
+
+        xDiff = abs(ship.x - self.ship.x)
+        yDiff = abs(ship.y - self.ship.y)
+
+        xInterpolate = xDiff / 2
+        yInterpolate = yDiff / 2
+
+        if ship.x > self.ship.x:
+            self.ship.x += xInterpolate
+        elif ship.x < self.ship.x:
+            self.ship.x -= xInterpolate
+        if ship.y > self.ship.y:
+            self.ship.y += yInterpolate
+        elif ship.y < self.ship.y:
+            self.ship.y -= yInterpolate
+
+        self.ship.dx = ship.dx
+        self.ship.dy = ship.dy

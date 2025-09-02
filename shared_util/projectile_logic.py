@@ -49,7 +49,7 @@ def check_projectile_collisions(projectile, ships, asteroids):
         distance_squared = ((ship.x - projectile.x) * (ship.x - projectile.x)
                             + (ship.y - projectile.y) * (ship.y - projectile.y))
 
-        if distance_squared < SHIP_HIT_BOX * SHIP_HIT_BOX:
+        if distance_squared < (SHIP_HIT_BOX + COLLISION_BUFFER) * (SHIP_HIT_BOX + COLLISION_BUFFER):
             if ship.shield > 0:
                 if projectile.name == "missile":
                     ship.shield -= 80
@@ -72,7 +72,7 @@ def check_projectile_collisions(projectile, ships, asteroids):
             distance_squared = (((asteroid.x - projectile.x) * (asteroid.x - projectile.x))
                                 + ((asteroid.y - projectile.y) * (asteroid.y - projectile.y)))
 
-            if distance_squared < asteroid.radius * asteroid.radius:
+            if distance_squared < (asteroid.radius + COLLISION_BUFFER) * (asteroid.radius + COLLISION_BUFFER):
 
                 if projectile.name == "missile":
                     asteroid.alive = False

@@ -56,7 +56,7 @@ class Server:
             'missiles': self.all_missiles.copy(),
             'bullets': self.all_bullets.copy(),
             'ships': self.all_ships.copy(),
-            'asteroids': self.all_asteroids.copy(),
+            'asteroids': self.all_asteroids,
             'explosions': self.explosion_events.copy(),
             'timestamp': time.time()
         }
