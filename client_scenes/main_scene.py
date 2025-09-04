@@ -1,10 +1,11 @@
-from shared_util.radar_logic import radar_pulse
+
 from rendering.render_util import *
 from rendering.camera import Camera
 from entities.ship import Ship
 from shared_util.ship_logic import *
 from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
+from ship_subsystems.radar_system import RadarSystem
 
 
 class MainScene:
@@ -53,10 +54,13 @@ class MainScene:
         self.star_tiles = generate_star_tiles()
 
         self.camera = Camera(self.screen)
+
         self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
+
         self.all_ships.append(self.ship)
 
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
+        self.radar_system = RadarSystem()
 
         if not self.connected:
             self.all_asteroids = generate_some_asteroids()
@@ -68,9 +72,13 @@ class MainScene:
 
             # Radar
             if self.ship.wants_radar_pulse:
-                self.radar_signatures = radar_pulse(self.all_ships, self.all_asteroids, self.ship)
+                self.radar_signatures.clear()
+                self.radar_system.begin_scan(self.ship, self.all_ships, self.all_asteroids)
                 self.ship.can_pulse = False
                 self.ship.wants_radar_pulse = False
+
+            if self.radar_system.scanning:
+                self.radar_signatures.extend(self.radar_system.continue_scan())
 
             if self.ship.health <= 0:
                 self.ship = None
@@ -102,6 +110,7 @@ class MainScene:
 
         draw_radar_screen(self.screen, self.radar_signatures,
                           (self.all_ships[0].x, self.all_ships[0].y), self.all_missiles)
+
         draw_ship_data(self.screen, self.ship, self.ui_font)
         draw_fps(self.screen, self.clock, self.ui_font)
 

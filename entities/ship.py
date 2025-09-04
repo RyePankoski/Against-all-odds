@@ -52,7 +52,7 @@ class Ship:
 
         self.radar_signatures = []
         self.wants_radar_pulse = False
-        self.radar_resolution = 360
+        self.radar_resolution = 1440
 
         sprite_name = 'ship1' if owner == 1 else 'ship2'
         self.ship_sprite = SpriteManager.get_sprite(sprite_name)
@@ -62,11 +62,8 @@ class Ship:
 
     def update(self, dt):
 
-        print(f"updating {self.owner}'s ship. Health: {self.health}, Shield{int(self.shield)}")
-
         if self.health <= 0:
             self.alive = False
-            print(f"{self.owner} ship has been marked as dead")
             return
 
         if self.shield < SHIELD_HEALTH and self.can_recharge:
