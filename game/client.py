@@ -1,5 +1,5 @@
-from scenes.main_scene import MainScene
-from scenes.pause_menu import PauseMenu
+from client_scenes.main_scene import MainScene
+from client_scenes.pause_menu import PauseMenu
 import pygame
 import time
 
@@ -8,13 +8,18 @@ class Client:
     def __init__(self, screen, clock, fake_net, connected):
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
         self.connected = connected
-        self.main_scene = MainScene(screen, clock, connected, 1)
         self.pause_menu = PauseMenu(screen, self.ui_font)
         self.fake_net = fake_net
+
+        self.scenes = {"main_scene": MainScene(screen, clock, connected, 1)}
+        self.scene = None
+
+        self.scene = self.scenes["main_scene"]
 
         self.paused = False
 
     def run(self, dt, events):
+
         inputs = self.collect_inputs()
 
         for event in events:
@@ -28,12 +33,13 @@ class Client:
             self.run_scene(inputs, dt)
 
     def run_scene(self, inputs, dt):
+
         if self.connected:
             self.send_data_to_server(inputs)
             self.get_data_from_server()
 
-        self.main_scene.inject_inputs(inputs)
-        self.main_scene.run(dt)
+        self.scene.inject_inputs(inputs)
+        self.scene.run(dt)
 
     def send_data_to_server(self, inputs):
         if len(inputs) > 0:
@@ -41,20 +47,20 @@ class Client:
 
         if inputs:
             message = {
-                'player_id': self.main_scene.player_number,
+                'player_id': self.scene.player_number,
                 'input_data': inputs,
                 'timestamp': time.time()
             }
             self.fake_net.send_to_server(message)
 
     def get_data_from_server(self):
-        self.main_scene.inject_server_data(self.fake_net.get_client_messages())
+        self.scene.inject_server_data(self.fake_net.get_client_messages())
 
     def collect_inputs(self):
         keys = pygame.key.get_pressed()
         mouse_buttons = pygame.mouse.get_pressed()
         mouse_screen_pos = pygame.mouse.get_pos()
-        mouse_world_pos = self.main_scene.camera.screen_to_world(*mouse_screen_pos)
+        mouse_world_pos = self.scene.camera.screen_to_world(*mouse_screen_pos)
 
         input_package = {
             # Movement keys

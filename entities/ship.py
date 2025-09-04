@@ -61,8 +61,12 @@ class Ship:
         self.bullet_ammo = MAX_BULLETS
 
     def update(self, dt):
+
+        print(f"updating {self.owner}'s ship. Health: {self.health}, Shield{int(self.shield)}")
+
         if self.health <= 0:
             self.alive = False
+            print(f"{self.owner} ship has been marked as dead")
             return
 
         if self.shield < SHIELD_HEALTH and self.can_recharge:

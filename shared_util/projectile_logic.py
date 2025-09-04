@@ -57,7 +57,8 @@ def check_projectile_collisions(projectile, ships, asteroids):
                     ship.shield -= 10
                 if ship.shield < 0:
                     ship.shield = 0
-            else:
+                    
+            if ship.shield <= 0:
                 if projectile.name == "missile":
                     ship.health -= 80
                 if projectile.name == "bullet":

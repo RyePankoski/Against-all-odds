@@ -137,7 +137,6 @@ class MainScene:
                     break
 
     def interpolate(self, ship):
-
         xDiff = abs(ship.x - self.ship.x)
         yDiff = abs(ship.y - self.ship.y)
 
