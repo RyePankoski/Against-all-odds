@@ -8,8 +8,9 @@ def check_ship_collisions(ship, asteroids):
                                 ((asteroid.y - ship.y) * (asteroid.y - ship.y)) -
                                 (asteroid.radius * asteroid.radius))
 
-            if distance_squared < BULLET_HIT_RANGE * BULLET_HIT_RANGE:
+            if distance_squared < (asteroid.radius + SHIP_HIT_BOX)**2:
                 asteroid.alive = False
+                print(f"{ship.owner} hit an asteroid!")
 
                 if ship.shield > 0:
                     ship.shield -= 60
@@ -20,8 +21,8 @@ def check_ship_collisions(ship, asteroids):
                 else:
                     ship.health -= 60
 
-                ship.dx *= -0.8
-                ship.dy *= -0.8
+                ship.dx *= -0.5
+                ship.dy *= -0.5
 
                 return
 
@@ -48,10 +49,10 @@ def update_ship_facing(ship, mouse_world_pos):
 
 def fire_weapon(ship, weapon_type):
     import math
-    from entities.missile import Missile
+    from entities.rocket import Rocket
     from entities.bullet import Bullet
 
-    if weapon_type == "missile" and ship.missile_ammo <= 0:
+    if weapon_type == "rocket" and ship.rocket_ammo <= 0:
         return
     if weapon_type == "bullet" and ship.bullet_ammo <= 0:
         return
@@ -64,10 +65,10 @@ def fire_weapon(ship, weapon_type):
     dx += ship.dx
     dy += ship.dy
 
-    if weapon_type == "missile":
-        ship.missile_ammo -= 1
-        new_missile = Missile(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
-        ship.missiles.append(new_missile)
+    if weapon_type == "rocket":
+        ship.rocket_ammo -= 1
+        new_rocket = Rocket(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
+        ship.rockets.append(new_rocket)
     elif weapon_type == "bullet":
         ship.bullet_ammo -= 1
         new_bullet = Bullet(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
@@ -97,16 +98,16 @@ def apply_inputs_to_ship(ship, input_data):
 
     # Weapon selection (discrete - only on key press)
     if input_data.get('1_pressed'):
-        ship.current_weapon = "missile"
+        ship.current_weapon = "rocket"
     if input_data.get('2_pressed'):
         ship.current_weapon = "bullet"
 
     # Firing (continuous - hold to fire)
     if input_data.get('mouse_left'):
-        if ship.current_weapon == "missile" and ship.can_fire_missile:
+        if ship.current_weapon == "rocket" and ship.can_fire_rocket:
             ship.firing_a_weapon = True
-            fire_weapon(ship, "missile")
-            ship.can_fire_missile = False
+            fire_weapon(ship, "rocket")
+            ship.can_fire_rocket = False
         elif ship.current_weapon == "bullet" and ship.can_fire_bullet:
             ship.firing_a_weapon = True
             fire_weapon(ship, "bullet")

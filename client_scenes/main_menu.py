@@ -29,17 +29,17 @@ class MainMenu:
         button_width = 700
         button_offset = button_width / 2
 
-        single_player_button = Button(self.width / 2 - button_offset, 300, button_width, 100,
+        single_player_button = Button(self.width / 2 - button_offset, 400, button_width, 100,
                                       "SINGLE PLAYER | 单人游戏", self.screen, "single_player_button")
-        multiplayer_button = Button(self.width / 2 - button_offset, 450, button_width, 100,
+        multiplayer_button = Button(self.width / 2 - button_offset, 550, button_width, 100,
                                     "CREATE SERVER | 创建服务器", self.screen, "create_server_button")
-        join_server_button = Button(self.width / 2 - button_offset, 600, button_width, 100,
+        join_server_button = Button(self.width / 2 - button_offset, 700, button_width, 100,
                                     "JOIN SERVER | 加入服务器", self.screen, "join_server_button")
-        settings_button = Button(self.width / 2 - button_offset, 750, button_width, 100,
+        settings_button = Button(self.width / 2 - button_offset, 850, button_width, 100,
                                  "SETTINGS | 设置", self.screen, "settings_button")
-        credits_button = Button(self.width / 2 - button_offset, 900, button_width, 100,
+        credits_button = Button(self.width / 2 - button_offset, 1000, button_width, 100,
                                 "CREDITS | 制作人员", self.screen, "credits_button")
-        exit_game_button = Button(self.width / 2 - button_offset, 1050, button_width, 100,
+        exit_game_button = Button(self.width / 2 - button_offset, 1150, button_width, 100,
                                   "EXIT GAME | 退出游戏", self.screen, "exit_game_button")
 
         self.buttons.append(single_player_button)
@@ -54,7 +54,7 @@ class MainMenu:
         self.title_text = "AGAINST ALL ODDS"
         self.title_surface = self.title_font.render(self.title_text, True, GREEN)
         self.title_rect = self.title_surface.get_rect()
-        self.title_rect.center = (self.width // 2, 150)  # Center horizontally, 150px from top
+        self.title_rect.center = (self.width // 2, 250)  # Center horizontally, 150px from top
 
         # Set state so game_manager knows to switch
         self.game_state = "menu"

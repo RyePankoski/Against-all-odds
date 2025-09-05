@@ -9,7 +9,7 @@ class ServerMainScene:
     def __init__(self, fake_net):
         self.fake_network = fake_net
         self.all_ships = []
-        self.all_missiles = []
+        self.all_rockets = []
         self.all_bullets = []
         self.explosion_events = []
         self.all_asteroids = generate_some_asteroids()
@@ -39,13 +39,13 @@ class ServerMainScene:
 
             # Collect new projectiles
             self.all_bullets.extend(ship.bullets)
-            self.all_missiles.extend(ship.missiles)
+            self.all_rockets.extend(ship.rockets)
             ship.bullets.clear()
-            ship.missiles.clear()
+            ship.rockets.clear()
 
         # Update game objects
         handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
-        handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
+        handle_rockets(self.all_rockets, self.all_ships, self.all_asteroids, self.explosion_events)
         handle_asteroids(self.all_asteroids)
 
         # Remove dead ships
@@ -53,7 +53,7 @@ class ServerMainScene:
 
         # Send state to clients
         game_state = {
-            'missiles': self.all_missiles.copy(),
+            'rockets': self.all_rockets.copy(),
             'bullets': self.all_bullets.copy(),
             'ships': self.all_ships.copy(),
             'asteroids': self.all_asteroids,

@@ -57,13 +57,13 @@ def draw_stars_tiled(star_tiles, camera, screen, width, height):
             screen.blit(tile_surface, (screen_x, screen_y))
 
 
-def draw_missiles(missiles, camera, screen):
-    for missile in missiles:
-        if camera.is_visible(missile.x, missile.y):
-            screen_x, screen_y = camera.world_to_screen(missile.x, missile.y)
+def draw_rockets(rockets, camera, screen):
+    for rocket in rockets:
+        if camera.is_visible(rocket.x, rocket.y):
+            screen_x, screen_y = camera.world_to_screen(rocket.x, rocket.y)
 
             # Use sprite manager
-            rotated_sprite = SpriteManager.get_rotated_sprite('missile', missile.angle)
+            rotated_sprite = SpriteManager.get_rotated_sprite('rocket', rocket.angle)
             if rotated_sprite:
                 rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
                 screen.blit(rotated_sprite, rotated_rect)
@@ -141,8 +141,8 @@ def draw_ship_data(screen, ship, font):
 
     dampening_status_en = "ACTIVE 激活" if hasattr(ship, 'dampening_active') and ship.dampening_active else "OFFLINE 离线"
 
-    if ship.current_weapon == "missile":
-        ammo = f"-MISSILES: {ship.missile_ammo} | 子弹"
+    if ship.current_weapon == "rocket":
+        ammo = f"-rocketS: {ship.rocket_ammo} | 子弹"
     elif ship.current_weapon == "bullet":
         ammo = f"-BULLETS: {ship.bullet_ammo} | 火箭弹"
     else:
@@ -194,7 +194,7 @@ def draw_ship_data(screen, ship, font):
         screen.blit(text, text_rect)
 
 
-def draw_radar_screen(screen, signatures, ship_pos, missiles):
+def draw_radar_screen(screen, signatures, ship_pos, rockets):
     width, height = pygame.display.get_desktop_sizes()[0]
 
     offset = 300
@@ -231,9 +231,9 @@ def draw_radar_screen(screen, signatures, ship_pos, missiles):
         if (radar_x * radar_x + radar_y * radar_y) <= radar_screen_size * radar_screen_size:
             pygame.draw.circle(screen, signature[2], (int(screen_x), int(screen_y)), 2)
 
-    for missile in missiles:
-        x = missile.x
-        y = missile.y
+    for rocket in rockets:
+        x = rocket.x
+        y = rocket.y
 
         relative_x = x - ship_pos[0]
         relative_y = y - ship_pos[1]

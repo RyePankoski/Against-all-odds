@@ -2,24 +2,24 @@ from game.settings import *
 from shared_util.object_handling import *
 
 
-def handle_missiles(all_missiles, all_ships, all_asteroids, explosion_events):
-    missiles_to_remove = []
+def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
+    rockets_to_remove = []
 
-    for missile in all_missiles:
-        missile.update()
-        check_projectile_collisions(missile, all_ships, all_asteroids)  # Direct call
+    for rocket in all_rockets:
+        rocket.update()
+        check_projectile_collisions(rocket, all_ships, all_asteroids)  # Direct call
 
-        if not missile.alive:
-            missiles_to_remove.append(missile)
-            explosion_events.append((missile.x, missile.y, YELLOW, 100))
+        if not rocket.alive:
+            rockets_to_remove.append(rocket)
+            explosion_events.append((rocket.x, rocket.y, ORANGE, 150))
             continue
 
-        # Remove missiles that are way outside the world
-        if missile.x < -100 or missile.x > WORLD_WIDTH + 100 or missile.y < -100 or missile.y > WORLD_HEIGHT + 100:
-            missiles_to_remove.append(missile)
+        # Remove rockets that are way outside the world
+        if rocket.x < -100 or rocket.x > WORLD_WIDTH + 100 or rocket.y < -100 or rocket.y > WORLD_HEIGHT + 100:
+            rockets_to_remove.append(rocket)
 
-    if missiles_to_remove:
-        remove_objects(missiles_to_remove, all_missiles)
+    if rockets_to_remove:
+        remove_objects(rockets_to_remove, all_rockets)
 
 
 def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
@@ -30,7 +30,7 @@ def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
         check_projectile_collisions(bullet, all_ships, all_asteroids)  # Direct call
 
         if not bullet.alive:
-            explosion_events.append((bullet.x, bullet.y, CYAN, 10))
+            explosion_events.append((bullet.x, bullet.y, PALE_BLUE, 50))
             bullets_to_remove.append(bullet)
             continue
 
@@ -52,7 +52,7 @@ def check_projectile_collisions(projectile, ships, asteroids):
 
         if distance_squared < (SHIP_HIT_BOX + COLLISION_BUFFER) * (SHIP_HIT_BOX + COLLISION_BUFFER):
             if ship.shield > 0:
-                if projectile.name == "missile":
+                if projectile.name == "rocket":
                     ship.shield -= 80
                 if projectile.name == "bullet":
                     ship.shield -= 10
@@ -61,7 +61,7 @@ def check_projectile_collisions(projectile, ships, asteroids):
                     ship.shield = 0
                     
             elif ship.shield <= 0:
-                if projectile.name == "missile":
+                if projectile.name == "rocket":
                     ship.health -= 80
                 if projectile.name == "bullet":
                     ship.health -= 10
@@ -77,7 +77,7 @@ def check_projectile_collisions(projectile, ships, asteroids):
 
             if distance_squared < (asteroid.radius + COLLISION_BUFFER) * (asteroid.radius + COLLISION_BUFFER):
 
-                if projectile.name == "missile":
+                if projectile.name == "rocket":
                     asteroid.alive = False
                     projectile.alive = False
                     return

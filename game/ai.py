@@ -1,7 +1,9 @@
-import math
-import random
-
 from shared_util.ship_logic import *
+import random
+import math
+
+
+
 
 
 class AI:
@@ -10,8 +12,7 @@ class AI:
         self.player_ship = player_ship
         self.all_ships = all_ships
         self.all_asteroids = all_asteroids
-        self.detect_player_range_squared = 3600 ** 2
-        # self.detect_player_range_squared = 1000 ** 2
+        self.detect_player_range_squared = (RADAR_PULSE_RANGE - 300) ** 2
 
         self.evasive_maneuver_timer = 0
         self.evasive_maneuver_cooldown = 120
@@ -22,9 +23,8 @@ class AI:
         self.can_change_wander = True
 
         self.bullet_burst_timer = 0
-        self.bullet_burst_cooldown = 20
+        self.bullet_burst_cooldown = 30
         self.can_bullet_burst = True
-
         self.bullet_burst = 10
 
         self.wander_dx = 0
@@ -97,14 +97,14 @@ class AI:
 
     def fire_at_player(self, distance_squared):
 
-        missile_engage_range = self.detect_player_range_squared/2
-        bullet_engage_range = self.detect_player_range_squared/10
+        rocket_engage_range = self.detect_player_range_squared / 2
+        bullet_engage_range = self.detect_player_range_squared / 10
 
-        if distance_squared < missile_engage_range:
+        if distance_squared < rocket_engage_range:
 
-            if self.ship.can_fire_missile:
-                fire_weapon(self.ship, "missile")
-                self.ship.can_fire_missile = False
+            if self.ship.can_fire_rocket:
+                fire_weapon(self.ship, "rocket")
+                self.ship.can_fire_rocket = False
         if distance_squared < bullet_engage_range:
             if self.ship.can_fire_bullet:
 
@@ -123,7 +123,7 @@ class AI:
             return
 
         if self.player_ship.firing_a_weapon:
-            strafe_force = 10
+            strafe_force = 15
 
             if random.random() < 0.5:
 

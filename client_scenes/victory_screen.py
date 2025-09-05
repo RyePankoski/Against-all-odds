@@ -1,6 +1,5 @@
 import pygame.display
 from game.settings import *
-
 from ui_components.button import Button
 
 

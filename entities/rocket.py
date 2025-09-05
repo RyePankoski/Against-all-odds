@@ -1,9 +1,9 @@
 from game.settings import *
 
 
-class Missile:
+class Rocket:
     def __init__(self, x, y, dx, dy, angle, owner, true_angle):
-        self.name = "missile"
+        self.name = "rocket"
         self.x = x
         self.y = y
         self.prev_x = x
@@ -17,7 +17,7 @@ class Missile:
 
         self.owner = owner
         self.velocity = 0
-        self.fuel = MISSILE_FUEL
+        self.fuel = ROCKET_FUEL
         self.alive = True
 
     def update(self):
@@ -25,7 +25,7 @@ class Missile:
 
     def fly(self):
         if self.fuel > 0:
-            self.velocity += MISSILE_THRUST
+            self.velocity += ROCKET_THRUST
             self.fuel -= 1
 
         self.prev_x = self.x

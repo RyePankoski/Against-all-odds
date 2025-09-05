@@ -14,7 +14,7 @@ A networked multiplayer asteroids game built in Python with Pygame, featuring de
 ### Gameplay
 - Real-time multiplayer asteroids with ships, projectiles, and destructible asteroids
 - Radar system for detecting nearby objects
-- Weapon systems (bullets and missiles) with ammunition management
+- Weapon systems (bullets and rockets) with ammunition management
 - Shield and health systems with regeneration mechanics
 
 ### Technical Implementation

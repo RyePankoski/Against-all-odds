@@ -24,7 +24,7 @@ def collect_inputs():
         'l': keys[pygame.K_l],  # continuous radar
 
         # Weapon selection
-        '1': keys[pygame.K_1],  # missile
+        '1': keys[pygame.K_1],  # rocket
         '2': keys[pygame.K_2],  # bullet
 
         # Mouse input

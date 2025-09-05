@@ -30,7 +30,7 @@ class NetworkSimulator:
         return ready_messages
 
     def send_to_client(self, message):
-        delay = random.uniform(self.delay_low, self.delay_high)  # 20-40ms
+        delay = random.uniform(self.delay_low, self.delay_high)
         delivery_time = time.time() + delay
         self.pending_client_messages.append((message, delivery_time))
 
