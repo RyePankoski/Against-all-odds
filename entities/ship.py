@@ -16,8 +16,10 @@ class Ship:
         self.bullets = []
         self.health = SHIP_HEALTH
         self.shield = SHIELD_HEALTH
+        self.power = SHIP_POWER
         self.sector = 0
         self.current_boost_fuel = BOOST_FUEL
+        self.firing_a_weapon = False
 
         self.fire_missile_timer = 0
         self.fire_missile_cooldown = 40 / 60
@@ -52,9 +54,20 @@ class Ship:
 
         self.radar_signatures = []
         self.wants_radar_pulse = False
-        self.radar_resolution = 1440
 
-        sprite_name = 'ship1' if owner == 1 else 'ship2'
+        self.radar_resolution_index = 3
+        self.available_radar_resolutions = [72, 360, 720, 1440, 3600]
+        self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
+
+        if owner == 1:
+            sprite_name = 'ship1'
+        elif owner == 2:
+            sprite_name = 'ship2'
+        elif owner == -1:
+            sprite_name = "aiShip"
+        else:
+            sprite_name = None
+
         self.ship_sprite = SpriteManager.get_sprite(sprite_name)
         self.current_weapon = "missile"
         self.missile_ammo = MAX_MISSILES
@@ -69,28 +82,23 @@ class Ship:
         if self.shield < SHIELD_HEALTH and self.can_recharge:
             self.shield += 0.05
 
+        if self.power < SHIP_POWER:
+            self.power += 0.1
+
         self.move()
 
         if self.can_fire_missile is False:
             self.fire_missile_timer += dt
             if self.fire_missile_timer > self.fire_missile_cooldown:
                 self.can_fire_missile = True
+                self.firing_a_weapon = False
                 self.fire_missile_timer = 0
         if self.can_fire_bullet is False:
             self.fire_bullet_timer += dt
             if self.fire_bullet_timer > self.fire_bullet_cooldown:
                 self.can_fire_bullet = True
+                self.firing_a_weapon = False
                 self.fire_bullet_timer = 0
-        if self.can_input_controls is False:
-            self.control_panel_timer += dt
-            if self.control_panel_timer > self.control_panel_cooldown:
-                self.can_input_controls = True
-                self.control_panel_timer = 0
-        if self.can_pulse is False:
-            self.radar_timer += dt
-            if self.radar_timer > self.radar_cooldown:
-                self.can_pulse = True
-                self.radar_timer = 0
         if self.can_recharge is False:
             self.shield_pause_timer += dt
             if self.shield_pause_timer > self.shield_pause_length:
@@ -101,7 +109,6 @@ class Ship:
             if self.missile_recharge_time > self.missile_recharge_length:
                 self.can_reload_missile = True
                 self.missile_recharge_time = 0
-
         if self.can_reload_bullet is False:
             self.bullet_recharge_timer += dt
             if self.bullet_recharge_timer > self.bullet_recharge_length:
@@ -167,3 +174,12 @@ class Ship:
                 self.dy -= DAMPENING_FORCE
             if self.dy < 0:
                 self.dy += DAMPENING_FORCE
+
+    def cycle_radar_resolution(self):
+
+        self.radar_resolution_index += 1
+
+        if self.radar_resolution_index >= len(self.available_radar_resolutions):
+            self.radar_resolution_index = 0
+
+        self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]

@@ -26,7 +26,6 @@ class Missile:
     def fly(self):
         if self.fuel > 0:
             self.velocity += MISSILE_THRUST
-            self.velocity += MISSILE_THRUST
             self.fuel -= 1
 
         self.prev_x = self.x

@@ -1,3 +1,4 @@
+import random
 
 from rendering.render_util import *
 from rendering.camera import Camera
@@ -6,6 +7,7 @@ from shared_util.ship_logic import *
 from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
 from ship_subsystems.radar_system import RadarSystem
+from game.ai import AI
 
 
 class MainScene:
@@ -49,29 +51,52 @@ class MainScene:
         self.all_ships = []
         self.radar_signatures = []
         self.explosion_events = []
-
         self.tile_size = 1024
         self.star_tiles = generate_star_tiles()
-
         self.camera = Camera(self.screen)
 
-        self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
+        self.number_of_ai = 50
+        self.all_ai = []
 
+        self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
         self.all_ships.append(self.ship)
 
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
         self.radar_system = RadarSystem()
 
         if not self.connected:
-            self.all_asteroids = generate_some_asteroids()
+            # self.all_asteroids = generate_some_asteroids()
+            for _ in range(self.number_of_ai):
+                ai_ship = Ship(
+                    random.randint(0, WORLD_WIDTH),
+                    random.randint(0, WORLD_HEIGHT),
+                    -1,
+                    None
+                )
+                self.all_ships.append(ai_ship)
+                ai = AI(ai_ship, self.ship, self.all_ships, self.all_asteroids)
+                self.all_ai.append(ai)
+
+        else:
+            self.ai = None
 
     def run(self, dt):
+
+        if len(self.all_ai) > 0:
+            for ai in self.all_ai:
+                ai.run(dt)
+
         if self.ship:
+
             self.ship.update(dt)
             apply_inputs_to_ship(self.ship, self.inputs)
+            self.camera.follow_target(self.ship.x, self.ship.y)
 
             # Radar
-            if self.ship.wants_radar_pulse:
+            if self.ship.wants_radar_pulse and self.ship.power > 20:
+                self.ship.power *= (1 - (self.ship.radar_resolution / MAX_RADAR_RESOLUTION)) - 0.2
+                self.ship.power = (max(0, self.ship.power))
+
                 self.radar_signatures.clear()
                 self.radar_system.begin_scan(self.ship, self.all_ships, self.all_asteroids)
                 self.ship.can_pulse = False
@@ -88,13 +113,16 @@ class MainScene:
             handle_asteroids(self.all_asteroids)
             handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
             handle_missiles(self.all_missiles, self.all_ships, self.all_asteroids, self.explosion_events)
-            self.all_bullets.extend(self.ship.bullets)
-            self.all_missiles.extend(self.ship.missiles)
-            self.ship.bullets.clear()
-            self.ship.missiles.clear()
 
-        if self.ship:
-            self.camera.follow_target(self.ship.x, self.ship.y)
+            for ship in self.all_ships:
+                self.all_bullets.extend(ship.bullets)
+                self.all_missiles.extend(ship.missiles)
+                ship.bullets.clear()
+                ship.missiles.clear()
+
+                if ship.alive is False:
+                    self.all_ships.remove(ship)
+
         self.render()
 
     def render(self):

@@ -23,6 +23,7 @@ class SpriteManager:
         sprite_paths = {
             'ship1': 'ship_sprites/ship1.png',
             'ship2': 'ship_sprites/ship2.png',
+            'aiShip': 'ship_sprites/aiShip.png',
             'missile': 'weapon_sprites/missile.png'
         }
 

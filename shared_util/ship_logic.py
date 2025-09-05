@@ -75,7 +75,6 @@ def fire_weapon(ship, weapon_type):
 
 
 def apply_inputs_to_ship(ship, input_data):
-
     thrust = BOOST_THRUST if input_data.get('shift') and ship.current_boost_fuel > 0 else THRUST
 
     if input_data.get('w'):
@@ -96,28 +95,35 @@ def apply_inputs_to_ship(ship, input_data):
     elif not input_data.get('shift') and ship.current_boost_fuel < BOOST_FUEL:
         ship.current_boost_fuel += 0.01
 
-    # Weapon selection
-    if input_data.get('1'):
+    # Weapon selection (discrete - only on key press)
+    if input_data.get('1_pressed'):
         ship.current_weapon = "missile"
-    if input_data.get('2'):
+    if input_data.get('2_pressed'):
         ship.current_weapon = "bullet"
 
-    # Firing
+    # Firing (continuous - hold to fire)
     if input_data.get('mouse_left'):
         if ship.current_weapon == "missile" and ship.can_fire_missile:
+            ship.firing_a_weapon = True
             fire_weapon(ship, "missile")
             ship.can_fire_missile = False
         elif ship.current_weapon == "bullet" and ship.can_fire_bullet:
+            ship.firing_a_weapon = True
             fire_weapon(ship, "bullet")
             ship.can_fire_bullet = False
 
-    # Control panel
-    if input_data.get('x') and ship.can_input_controls:
+    # Control panel (discrete - single press toggles)
+    if input_data.get('x_pressed'):
         ship.dampening_active = not ship.dampening_active
-        ship.can_input_controls = False
-    if input_data.get('r') and ship.can_pulse:
+
+    if input_data.get('r_pressed'):
         ship.wants_radar_pulse = True
-        ship.can_pulse = False
+        # No need for can_pulse timer anymore
+
+    # Radar resolution cycling (new discrete input)
+    if input_data.get('t_pressed'):
+        # You'll need to implement this cycling logic
+        ship.cycle_radar_resolution()
 
     # Update ship facing angle based on mouse position
     if 'mouse_world_pos' in input_data:

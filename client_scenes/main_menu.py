@@ -1,3 +1,152 @@
+import pygame.display
+from game.settings import *
+from lookup_tables import precomputed_angles
+import random
+from ui_components.button import Button
+
+
 class MainMenu:
-    def __init__(self):
-        pass
+    def __init__(self, screen):
+        self.screen = screen
+
+        # All the fancy radar menu stuff.
+        self.width, self.height = pygame.display.get_desktop_sizes()[0]
+        self.radar_resolution = 360
+        self.radar_rays = precomputed_angles.RADAR_DIRECTIONS[self.radar_resolution]
+        self.radar_sweep_frames = 1000
+        self.current_ray = 0
+        self.current_frame = 1
+        self.rays_per_frame = self.radar_resolution / self.radar_sweep_frames
+        self.can_sweep = True
+        self.sweep_timer = 0
+        self.sweep_timer_cooldown = 100 / 60
+        self.ship_found = False
+        self.all_signatures = []
+
+        # Buttons
+        self.buttons = []
+
+        button_width = 700
+        button_offset = button_width / 2
+
+        single_player_button = Button(self.width / 2 - button_offset, 300, button_width, 100,
+                                      "SINGLE PLAYER | 单人游戏", self.screen, "single_player_button")
+        multiplayer_button = Button(self.width / 2 - button_offset, 450, button_width, 100,
+                                    "CREATE SERVER | 创建服务器", self.screen, "create_server_button")
+        join_server_button = Button(self.width / 2 - button_offset, 600, button_width, 100,
+                                    "JOIN SERVER | 加入服务器", self.screen, "join_server_button")
+        settings_button = Button(self.width / 2 - button_offset, 750, button_width, 100,
+                                 "SETTINGS | 设置", self.screen, "settings_button")
+        credits_button = Button(self.width / 2 - button_offset, 900, button_width, 100,
+                                "CREDITS | 制作人员", self.screen, "credits_button")
+        exit_game_button = Button(self.width / 2 - button_offset, 1050, button_width, 100,
+                                  "EXIT GAME | 退出游戏", self.screen, "exit_game_button")
+
+        self.buttons.append(single_player_button)
+        self.buttons.append(multiplayer_button)
+        self.buttons.append(join_server_button)
+        self.buttons.append(settings_button)
+        self.buttons.append(credits_button)
+        self.buttons.append(exit_game_button)
+
+        # Title text setup
+        self.title_font = pygame.font.Font("../fonts/title_font2.ttf", 100)
+        self.title_text = "AGAINST ALL ODDS"
+        self.title_surface = self.title_font.render(self.title_text, True, GREEN)
+        self.title_rect = self.title_surface.get_rect()
+        self.title_rect.center = (self.width // 2, 150)  # Center horizontally, 150px from top
+
+        # Set state so game_manager knows to switch
+        self.game_state = "menu"
+
+    def run(self, dt, events):
+        self.render()
+        self.handle_buttons(events)
+        self.fake_radar_sweep()
+
+    def handle_buttons(self, events):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_clicked = False
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_clicked = True
+
+        for button in self.buttons:
+            button.render()
+            clicked = button.update(mouse_pos, mouse_clicked)
+
+            if clicked:
+                if button.button_id == "single_player_button":
+                    self.game_state = "single_player"
+                elif button.button_id == "create_server_button":
+                    self.game_state = "multiplayer"
+                elif button.button_id == "join_server_button":
+                    pass
+                elif button.button_id == "settings_button":
+                    pass
+                elif button.button_id == "credits_button":
+                    pass
+                elif button.button_id == "exit_game_button":
+                    pygame.quit()
+
+    def render(self):
+        # Draw radar screen
+        pygame.draw.circle(self.screen, GRAY, (self.width // 2, self.height // 2), self.height // 2 - 30)
+        pygame.draw.circle(self.screen, DARK_GREEN, (self.width // 2, self.height // 2), self.height // 2 - 50)
+        pygame.draw.circle(self.screen, GRAY, (self.width // 2, self.height // 2), 5)
+
+        # Draw sweep line
+        if self.current_ray < len(self.radar_rays):
+            center_x, center_y = self.width // 2, self.height // 2
+            dx, dy = self.radar_rays[self.current_ray]
+
+            # Draw line to edge of radar circle
+            line_length = self.height // 2 - 50
+            end_x = center_x + dx * line_length
+            end_y = center_y + dy * line_length
+
+            pygame.draw.line(self.screen, GREEN, (center_x, center_y), (end_x, end_y), 2)
+
+        # Draw signatures
+        for signature in self.all_signatures:
+            pygame.draw.circle(self.screen, signature[2], (signature[0], signature[1]), signature[3])
+
+        # Draw title
+        bg_rect = self.title_rect.copy()
+        bg_rect.inflate_ip(60, 30)
+        pygame.draw.rect(self.screen, (20, 20, 20), bg_rect, border_radius=15)  # Dark background
+        pygame.draw.rect(self.screen, GREEN, bg_rect, width=3, border_radius=15)  # Green border
+        self.screen.blit(self.title_surface, self.title_rect)
+
+    def fake_radar_sweep(self):
+        signatures = []
+        while self.current_ray < self.rays_per_frame * self.current_frame:
+
+            dx, dy = self.radar_rays[self.current_ray]
+            self.current_ray += 1
+            ray_distance = 0
+            ray_x, ray_y = self.width // 2, self.height // 2
+            continue_ray = True
+
+            while continue_ray and ray_distance < 160:
+                ray_distance += 10
+                ray_x += dx * RADAR_PULSE_SPEED
+                ray_y += dy * RADAR_PULSE_SPEED
+
+                if random.random() < 0.025:
+                    if random.random() < 0.01 and self.ship_found is False:
+                        self.ship_found = True
+                        signatures.append((ray_x, ray_y, RED, 6))
+                    else:
+                        signatures.append((ray_x, ray_y, WHITE, 2))
+                    continue_ray = False
+
+        if self.current_frame > self.radar_sweep_frames or self.current_ray >= len(self.radar_rays):
+            self.ship_found = False
+            self.current_frame = 1
+            self.current_ray = 0
+            self.all_signatures.clear()
+
+        self.current_frame += 1
+        self.all_signatures.extend(signatures)

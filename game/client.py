@@ -1,25 +1,25 @@
 from client_scenes.main_scene import MainScene
 from client_scenes.pause_menu import PauseMenu
+
 import pygame
 import time
 
 
 class Client:
-    def __init__(self, screen, clock, fake_net, connected):
-        self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
+    def __init__(self, screen, clock, connected, fake_net):
         self.connected = connected
-        self.pause_menu = PauseMenu(screen, self.ui_font)
         self.fake_net = fake_net
 
+        self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
+
         self.scenes = {"main_scene": MainScene(screen, clock, connected, 1)}
-        self.scene = None
-
         self.scene = self.scenes["main_scene"]
+        self.pause_menu = PauseMenu(screen, self.ui_font)
 
+        self.prev_inputs = None
         self.paused = False
 
     def run(self, dt, events):
-
         inputs = self.collect_inputs()
 
         for event in events:
@@ -62,32 +62,38 @@ class Client:
         mouse_screen_pos = pygame.mouse.get_pos()
         mouse_world_pos = self.scene.camera.screen_to_world(*mouse_screen_pos)
 
+        # Get previous input state or initialize if first run
+        prev_inputs = getattr(self, 'prev_inputs', {})
+
         input_package = {
-            # Movement keys
+            # Continuous inputs
             'w': keys[pygame.K_w],
             'a': keys[pygame.K_a],
             's': keys[pygame.K_s],
             'd': keys[pygame.K_d],
+            'space': keys[pygame.K_SPACE],
+            'shift': keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT],
+            'l': keys[pygame.K_l],
+            'mouse_left': mouse_buttons[0],
+            'mouse_world_pos': mouse_world_pos,
 
-            # Action keys
-            'space': keys[pygame.K_SPACE],  # brake
-            'shift': keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT],  # boost
-            'r': keys[pygame.K_r],  # radar pulse
+            # Discrete inputs (just pressed)
+            'r_pressed': keys[pygame.K_r] and not prev_inputs.get('r', False),
+            't_pressed': keys[pygame.K_t] and not prev_inputs.get('t', False),
+            '1_pressed': keys[pygame.K_1] and not prev_inputs.get('1', False),
+            '2_pressed': keys[pygame.K_2] and not prev_inputs.get('2', False),
+            'x_pressed': keys[pygame.K_x] and not prev_inputs.get('x', False),
 
-            # Control panel keys
-            'x': keys[pygame.K_x],  # toggle dampening
-            'l': keys[pygame.K_l],  # continuous radar
-
-            # Weapon selection
-            '1': keys[pygame.K_1],  # missile
-            '2': keys[pygame.K_2],  # bullet
-
-            # Mouse input
-            'mouse_left': mouse_buttons[0],  # fire weapon
-            'mouse_world_pos': mouse_world_pos,  # for aiming
-
-            # Timestamp for lag compensation
             'timestamp': time.time()
+        }
+
+        # Store discrete keys for next frame comparison
+        self.prev_inputs = {
+            'r': keys[pygame.K_r],
+            't': keys[pygame.K_t],
+            '1': keys[pygame.K_1],
+            '2': keys[pygame.K_2],
+            'x': keys[pygame.K_x]
         }
 
         return input_package

@@ -17,6 +17,7 @@ class RadarSystem:
         self.radar_rays = None
 
         self.scanning = False
+        self.ray_collision_distance_squared = RADAR_DETECT_RANGE * RADAR_DETECT_RANGE
 
     def begin_scan(self, passed_ship, all_ships, all_asteroids):
         self.scanning = True
@@ -26,18 +27,24 @@ class RadarSystem:
         self.all_ships = all_ships
         self.all_asteroids = all_asteroids
         self.scan_resolution = passed_ship.radar_resolution
-        self.radar_rays = precomputed_angles.RADAR_DIRECTIONS[self.scan_resolution]
 
+        # We cant have < 1 rays per frame
+        if self.scan_resolution < self.scan_frames:
+            self.scan_frames = self.scan_resolution
+        else:
+            self.scan_frames = 100
+
+        self.radar_rays = precomputed_angles.RADAR_DIRECTIONS[self.scan_resolution]
         self.rays_per_frame = self.scan_resolution // self.scan_frames
+        print(self.scan_resolution)
 
     def continue_scan(self):
         signatures = []
-        ray_collision_distance = RADAR_DETECT_RANGE * RADAR_DETECT_RANGE
 
         if self.current_frame >= self.scan_frames:
             self.scanning = False
-            pass
 
+        # Only process some % of total rays per frame.
         while self.current_ray < self.rays_per_frame * self.current_frame:
 
             dx, dy = self.radar_rays[self.current_ray]
@@ -59,23 +66,18 @@ class RadarSystem:
                     if ship is self.passed_ship:
                         continue
 
-                    distance = ((ship.x - ray_x) ** 2 + (ship.y - ray_y) ** 2)
-                    if distance < ray_collision_distance:
+                    distance_squared = ((ship.x - ray_x) ** 2 + (ship.y - ray_y) ** 2)
+                    if distance_squared < self.ray_collision_distance_squared:
                         signatures.append((ray_x, ray_y, RED))
                         hit_found = True
                         break
-
-                if ray_sector not in self.all_asteroids:
-                    continue
 
                 if ray_sector in self.all_asteroids and self.all_asteroids[ray_sector]:
                     for asteroid in self.all_asteroids[ray_sector]:
                         distance_squared = ((asteroid.x - ray_x) ** 2 +
                                             (asteroid.y - ray_y) ** 2)
-                        collision_radius = 20 + asteroid.radius
-                        collision_radius_squared = collision_radius ** 2
 
-                        if distance_squared < collision_radius_squared:
+                        if distance_squared < self.ray_collision_distance_squared:
                             signatures.append((ray_x, ray_y, WHITE))
                             hit_found = True
                             break

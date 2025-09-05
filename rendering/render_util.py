@@ -125,7 +125,7 @@ def draw_ship_data(screen, ship, font):
         return
 
     panel_x, panel_y = 10, 10
-    panel_width, panel_height = 250, 250
+    panel_width, panel_height = 250, 300
 
     pygame.draw.rect(screen, (0, 20, 0), (panel_x, panel_y, panel_width, panel_height))
     pygame.draw.rect(screen, (0, 255, 0), (panel_x, panel_y, panel_width, panel_height), 2)
@@ -163,6 +163,8 @@ def draw_ship_data(screen, ship, font):
         f"DAMP: {dampening_status_en:>7}",
         f"SHIELD: {shields_level:>7}%",
         f"WEAPON: {weapon:>3} | 武器",
+        f"POWER: {int(ship.power)} | 电力",
+        f"RADAR-RES: {ship.radar_resolution} | 分辨率",
         ammo
     ]
 

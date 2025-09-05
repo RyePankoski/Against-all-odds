@@ -8,7 +8,6 @@ import sys
 pygame.init()
 screen = pygame.display.set_mode(pygame.display.get_desktop_sizes()[0])
 clock = pygame.time.Clock()
-fake_net = NetworkSimulator()
 game_manager = GameManager(screen, clock)
 FPS = 60
 
