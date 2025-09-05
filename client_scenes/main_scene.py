@@ -8,6 +8,8 @@ from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
 from ship_subsystems.radar_system import RadarSystem
 from game.ai import AI
+from client_scenes.victory_screen import VictoryScreen
+from client_scenes.defeat_screen import DefeatScreen
 
 
 class MainScene:
@@ -55,7 +57,7 @@ class MainScene:
         self.star_tiles = generate_star_tiles()
         self.camera = Camera(self.screen)
 
-        self.number_of_ai = 50
+        self.number_of_ai = 1
         self.all_ai = []
 
         self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
@@ -63,6 +65,12 @@ class MainScene:
 
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
         self.radar_system = RadarSystem()
+
+        self.victory = False
+        self.game_over = False
+
+        self.victory_screen = VictoryScreen(self.screen)
+        self.defeat_screen = DefeatScreen()
 
         if not self.connected:
             # self.all_asteroids = generate_some_asteroids()
@@ -82,9 +90,17 @@ class MainScene:
 
     def run(self, dt):
 
+        """Handles all relevant stuff, ships, projectiles, etc"""
+
         if len(self.all_ai) > 0:
             for ai in self.all_ai:
                 ai.run(dt)
+
+                if ai.ship.alive is False:
+                    self.all_ai.remove(ai)
+
+        elif len(self.all_ai) <= 0:
+            self.victory = True
 
         if self.ship:
 
@@ -124,6 +140,12 @@ class MainScene:
                     self.all_ships.remove(ship)
 
         self.render()
+
+        if self.victory:
+            self.victory_screen.run()
+
+            if self.victory_screen.state_to_extract == "new_game":
+                self.__init__(self.screen, self.clock, self.connected, self.player_number)
 
     def render(self):
         draw_stars_tiled(self.star_tiles, self.camera, self.screen,
@@ -169,7 +191,6 @@ class MainScene:
                 if ship.owner == self.player_number:
                     self.ship.shield = ship.shield
                     self.ship.health = ship.health
-
                     self.interpolate(ship)
                     break
 

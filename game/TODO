@@ -1,9 +1,0 @@
-Convert all movement to delta-time based (bullets, missiles, ships, asteroids)
-Add prev_x and prev_y to bullet and missile classes ✔
-Implement line-segment collision detection for projectiles
-Replace point collision with line-to-point distance calculation
-Test that server can run at 60Hz without changing game physics
-Add client-side prediction for bullets (simulate locally + server validation)
-Implement smooth interpolation for server corrections instead of snapping
-Fix any remaining coordinate system issues with radar display ✔
-Test the system with various network delay ranges to verify improvements

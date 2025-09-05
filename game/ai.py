@@ -97,8 +97,8 @@ class AI:
 
     def fire_at_player(self, distance_squared):
 
-        missile_engage_range = 1500 ** 2
-        bullet_engage_range = 1000 ** 2
+        missile_engage_range = self.detect_player_range_squared/2
+        bullet_engage_range = self.detect_player_range_squared/10
 
         if distance_squared < missile_engage_range:
 

@@ -24,6 +24,9 @@ class SpriteManager:
             'ship1': 'ship_sprites/ship1.png',
             'ship2': 'ship_sprites/ship2.png',
             'aiShip': 'ship_sprites/aiShip.png',
+            'aiShip2': 'ship_sprites/aiShip2.png',
+            'aiShip3': 'ship_sprites/aiShip3.png',
+            'aiShip4': 'ship_sprites/aiShip.png',
             'missile': 'weapon_sprites/missile.png'
         }
 

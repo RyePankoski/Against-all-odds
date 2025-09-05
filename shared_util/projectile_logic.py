@@ -43,6 +43,7 @@ def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
 
 def check_projectile_collisions(projectile, ships, asteroids):
     for ship in ships:
+
         if ship.owner == projectile.owner:
             continue
 
@@ -56,9 +57,10 @@ def check_projectile_collisions(projectile, ships, asteroids):
                 if projectile.name == "bullet":
                     ship.shield -= 10
                 if ship.shield < 0:
+                    ship.can_shield_recharge = False
                     ship.shield = 0
                     
-            if ship.shield <= 0:
+            elif ship.shield <= 0:
                 if projectile.name == "missile":
                     ship.health -= 80
                 if projectile.name == "bullet":

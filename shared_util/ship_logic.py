@@ -16,7 +16,7 @@ def check_ship_collisions(ship, asteroids):
                     ship.shield = max(0, ship.shield)
 
                     if ship.shield == 0:
-                        ship.can_recharge = False
+                        ship.can_shield_recharge = False
                 else:
                     ship.health -= 60
 

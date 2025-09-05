@@ -1,3 +1,5 @@
+import random
+
 from rendering.sprite_manager import SpriteManager
 from shared_util.ship_logic import *
 
@@ -39,7 +41,7 @@ class Ship:
 
         self.shield_pause_timer = 0
         self.shield_pause_length = 200 / 60
-        self.can_recharge = True
+        self.can_shield_recharge = True
 
         self.bullet_recharge_timer = 0
         self.bullet_recharge_length = 25 / 60
@@ -59,12 +61,14 @@ class Ship:
         self.available_radar_resolutions = [72, 360, 720, 1440, 3600]
         self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
 
+        self.ai_ships = ["aiShip", "aiShip2", "aiShip3", "aiShip4"]
+
         if owner == 1:
             sprite_name = 'ship1'
         elif owner == 2:
             sprite_name = 'ship2'
         elif owner == -1:
-            sprite_name = "aiShip"
+            sprite_name = random.choice(self.ai_ships)
         else:
             sprite_name = None
 
@@ -79,7 +83,7 @@ class Ship:
             self.alive = False
             return
 
-        if self.shield < SHIELD_HEALTH and self.can_recharge:
+        if self.shield < SHIELD_HEALTH and self.can_shield_recharge:
             self.shield += 0.05
 
         if self.power < SHIP_POWER:
@@ -99,10 +103,10 @@ class Ship:
                 self.can_fire_bullet = True
                 self.firing_a_weapon = False
                 self.fire_bullet_timer = 0
-        if self.can_recharge is False:
+        if self.can_shield_recharge is False:
             self.shield_pause_timer += dt
             if self.shield_pause_timer > self.shield_pause_length:
-                self.can_recharge = True
+                self.can_shield_recharge = True
                 self.shield_pause_timer = 0
         if self.can_reload_missile is False:
             self.missile_recharge_time += dt
@@ -114,7 +118,6 @@ class Ship:
             if self.bullet_recharge_timer > self.bullet_recharge_length:
                 self.can_reload_bullet = True
                 self.bullet_recharge_timer = 0
-
         if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
             self.bullet_ammo += 1
             self.can_reload_bullet = False
