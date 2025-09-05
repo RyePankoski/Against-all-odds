@@ -76,7 +76,13 @@ def draw_bullets(bullets, camera, screen):
     for bullet in bullets:
         if camera.is_visible(bullet.x, bullet.y):
             screen_x, screen_y = camera.world_to_screen(bullet.x, bullet.y)
-            pygame.draw.circle(screen, RED, (screen_x, screen_y), 3)
+            rotated_sprite = SpriteManager.get_rotated_sprite('bullet', bullet.angle)
+            if rotated_sprite:
+                rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
+                screen.blit(rotated_sprite, rotated_rect)
+            else:
+                # Fallback rendering
+                pygame.draw.circle(screen, YELLOW, (screen_x, screen_y), 3)
 
 
 def draw_ships(ships, camera, screen):

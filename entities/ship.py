@@ -11,16 +11,23 @@ class Ship:
         self.owner = owner
         self.camera = camera
 
+        # Ship movement parameters
         self.dx = 0
         self.dy = 0
         self.facing_angle = 0
+        self.sector = 0
+
+        # Projectile stuff
         self.rockets = []
         self.bullets = []
+
+        # State stuff
+        self.power = SHIP_POWER
         self.health = SHIP_HEALTH
         self.shield = SHIELD_HEALTH
-        self.power = SHIP_POWER
-        self.sector = 0
         self.current_boost_fuel = BOOST_FUEL
+
+        # Weapon handling
         self.firing_a_weapon = False
 
         self.fire_rocket_timer = 0
@@ -87,7 +94,7 @@ class Ship:
             self.shield += 0.05
 
         if self.power < SHIP_POWER:
-            self.power += 0.1
+            self.power += 0.04
 
         self.move()
 
@@ -167,7 +174,6 @@ class Ship:
             self.dy += min(BRAKE, abs(self.dy))
 
     def dampening(self):
-
         if self.dampening_active:
             if self.dx < 0:
                 self.dx += DAMPENING_FORCE
@@ -179,10 +185,7 @@ class Ship:
                 self.dy += DAMPENING_FORCE
 
     def cycle_radar_resolution(self):
-
         self.radar_resolution_index += 1
-
         if self.radar_resolution_index >= len(self.available_radar_resolutions):
             self.radar_resolution_index = 0
-
         self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
