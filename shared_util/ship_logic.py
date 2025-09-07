@@ -1,4 +1,5 @@
 from game.settings import *
+from rendering.sound_manager import SoundManager
 
 
 def check_ship_collisions(ship, asteroids):

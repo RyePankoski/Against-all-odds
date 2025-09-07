@@ -122,6 +122,20 @@ class WorldRender:
                 # Blit the alpha surface to the main screen
                 self.screen.blit(shield_surface, (screen_x - 50, screen_y - 50))
 
+    def draw_battleships(self, ships, camera):
+        for ship in ships:
+            if camera.is_visible(ship.x, ship.y):
+                screen_x, screen_y = camera.world_to_screen(ship.x, ship.y)
+
+                if ship.ship_sprite:
+                    sprite = ship.ship_sprite
+                    sprite_rect = sprite.get_rect(center=(screen_x, screen_y))
+                    self.screen.blit(sprite, sprite_rect)
+                else:
+                    # Fallback
+                    color = GREEN if ship.owner == 1 else RED
+                    pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
+
     def draw_asteroids(self, asteroid_sectors, camera):
         if not asteroid_sectors:  # Handle empty or None dict
             return
@@ -177,9 +191,9 @@ class WorldRender:
         dampening_status_en = "ACTIVE 激活" if dampening_active else "OFFLINE 离线"
 
         if ship.current_weapon == "rocket":
-            ammo = f"-rocketS: {ship.rocket_ammo} | 子弹"
+            ammo = f"-ROCKET: {ship.rocket_ammo} | 子弹"
         elif ship.current_weapon == "bullet":
-            ammo = f"-BULLETS: {ship.bullet_ammo} | 火箭弹"
+            ammo = f"-CANNON: {ship.bullet_ammo} | 火箭弹"
         else:
             ammo = ""
 
@@ -274,15 +288,12 @@ class WorldRender:
                 pygame.draw.circle(self.screen, RED, (int(screen_x), int(screen_y)), 1)
 
         for angle in enemy_pings:
-            # Convert angle to unit vector
-            dx = -math.cos(angle)  # flip left/right
-            dy = math.sin(angle)  # keep up/down the same
+            dx = math.cos(angle)
+            dy = math.sin(angle) * -1
 
-            # Scale to radar rim
             edge_x = radar_screen_position[0] + dx * radar_screen_size
             edge_y = radar_screen_position[1] + dy * radar_screen_size
 
-            # Draw a red dot at the edge
             pygame.draw.circle(self.screen, RED, (int(edge_x), int(edge_y)), 10)
 
     def draw_fps(self, clock):

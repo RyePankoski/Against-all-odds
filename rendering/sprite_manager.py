@@ -28,7 +28,8 @@ class SpriteManager:
             'aiShip3': 'ship_sprites/aiShip3.png',
             'aiShip4': 'ship_sprites/aiShip.png',
             'rocket': 'weapon_sprites/rocket.png',
-            'bullet': 'weapon_sprites/bullet.png'
+            'bullet': 'weapon_sprites/bullet.png',
+            "battleship": 'ship_sprites/battle_ship.png',
         }
 
         for name, relative_path in sprite_paths.items():

@@ -5,12 +5,12 @@ from shared_util.object_handling import *
 import math
 
 
-def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
+def handle_rockets(all_rockets, all_ships, all_battleships, all_asteroids, explosion_events):
     rockets_to_remove = []
 
     for rocket in all_rockets:
         rocket.update()
-        check_projectile_collisions(rocket, all_ships, all_asteroids)  # Direct call
+        check_projectile_collisions(rocket, all_ships, all_battleships, all_asteroids)  # Direct call
 
         if not rocket.alive:
             rockets_to_remove.append(rocket)
@@ -25,12 +25,12 @@ def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
         remove_objects(rockets_to_remove, all_rockets)
 
 
-def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
+def handle_bullets(all_bullets, all_ships, all_battleships, all_asteroids, explosion_events):
     bullets_to_remove = []
 
     for bullet in all_bullets:
         bullet.update()
-        check_projectile_collisions(bullet, all_ships, all_asteroids)  # Direct call
+        check_projectile_collisions(bullet, all_ships, all_battleships, all_asteroids)  # Direct call
 
         if not bullet.alive:
             explosion_events.append((bullet.x, bullet.y, PALE_BLUE, 50))
@@ -44,11 +44,11 @@ def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
         remove_objects(bullets_to_remove, all_bullets)
 
 
-def check_projectile_collisions(projectile, ships, asteroids):
+def check_projectile_collisions(projectile, ships, battleships, asteroids):
     # Damage values for different projectile types
     DAMAGE_VALUES = {
         "rocket": 40,
-        "bullet": 10
+        "bullet": 20
     }
 
     damage = DAMAGE_VALUES.get(projectile.name, 0)
@@ -61,6 +61,14 @@ def check_projectile_collisions(projectile, ships, asteroids):
 
         if _check_collision(projectile, ship.x, ship.y, ship_collision_radius_squared):
             _apply_ship_damage(ship, damage)
+            projectile.alive = False
+            return
+
+    for battleship in battleships:
+        battleship_hit_box = 100 * 100
+
+        if _check_collision(projectile, battleship.x, battleship.y, battleship_hit_box):
+            _apply_ship_damage(battleship, damage)
             projectile.alive = False
             return
 

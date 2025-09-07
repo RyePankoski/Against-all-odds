@@ -37,7 +37,6 @@ class RadarSystem:
 
         self.radar_rays = precomputed_angles.RADAR_DIRECTIONS[self.scan_resolution]
         self.rays_per_frame = self.scan_resolution // self.scan_frames
-        print(self.scan_resolution)
 
     def continue_scan(self):
         signatures = []
@@ -69,10 +68,12 @@ class RadarSystem:
 
                     distance_squared = ((ship.x - ray_x) ** 2 + (ship.y - ray_y) ** 2)
                     if distance_squared < self.ray_collision_distance_squared:
+                        # Instead of (enemy.x - self.x, enemy.y - self.y)
+                        # Use (self.x - enemy.x, self.y - enemy.y)
 
                         angle = math.atan2(
-                            ship.y - self.passed_ship.y,  # Δy first
-                            ship.x - self.passed_ship.x  # Δx second
+                            self.passed_ship.y - ship.y,  # Δy (you → enemy)
+                            self.passed_ship.x - ship.x  # Δx (you → enemy)
                         )
                         ship.enemy_radar_ping_coordinates.append(angle)
 
