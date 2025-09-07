@@ -1,5 +1,6 @@
 from client_scenes.main_scene import MainScene
 from client_scenes.pause_menu import PauseMenu
+from game.settings import *
 
 import pygame
 import time
@@ -9,6 +10,7 @@ class Client:
     def __init__(self, screen, clock, connected, fake_net):
         self.connected = connected
         self.fake_net = fake_net
+        pygame.mouse.set_visible(False)
 
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
 
@@ -29,17 +31,19 @@ class Client:
 
         if self.paused:
             self.pause_menu.render()
+            pygame.mouse.set_visible(True)
+
         else:
             self.run_scene(inputs, dt)
 
     def run_scene(self, inputs, dt):
 
-        if self.connected:
-            self.send_data_to_server(inputs)
-            self.get_data_from_server()
-
         self.scene.inject_inputs(inputs)
         self.scene.run(dt)
+
+        if self.connected:
+            self.send_data_to_server(inputs)
+            self.get_data_from_server(dt)
 
     def send_data_to_server(self, inputs):
         if len(inputs) > 0:
@@ -49,12 +53,13 @@ class Client:
             message = {
                 'player_id': self.scene.player_number,
                 'input_data': inputs,
-                'timestamp': time.time()
+                'timestamp': time.time(),
+                'frame': self.scene.frame
             }
             self.fake_net.send_to_server(message)
 
-    def get_data_from_server(self):
-        self.scene.inject_server_data(self.fake_net.get_client_messages())
+    def get_data_from_server(self, dt):
+        self.scene.inject_server_data(self.fake_net.get_client_messages(), dt)
 
     def collect_inputs(self):
         keys = pygame.key.get_pressed()
@@ -84,7 +89,7 @@ class Client:
             '2_pressed': keys[pygame.K_2] and not prev_inputs.get('2', False),
             'x_pressed': keys[pygame.K_x] and not prev_inputs.get('x', False),
 
-            'timestamp': time.time()
+            'timestamp': time.time(),
         }
 
         # Store discrete keys for next frame comparison

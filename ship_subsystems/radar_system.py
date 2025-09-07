@@ -1,5 +1,6 @@
 from game.settings import *
 from lookup_tables import precomputed_angles
+import math
 
 
 class RadarSystem:
@@ -9,7 +10,7 @@ class RadarSystem:
         self.scan_frames = 100
         self.current_ray = 0
 
-        self.scan_resolution = None
+        self.scan_resolution = 720
         self.passed_ship = None
         self.all_ships = None
         self.all_asteroids = None
@@ -68,6 +69,13 @@ class RadarSystem:
 
                     distance_squared = ((ship.x - ray_x) ** 2 + (ship.y - ray_y) ** 2)
                     if distance_squared < self.ray_collision_distance_squared:
+
+                        angle = math.atan2(
+                            ship.y - self.passed_ship.y,  # Δy first
+                            ship.x - self.passed_ship.x  # Δx second
+                        )
+                        ship.enemy_radar_ping_coordinates.append(angle)
+
                         signatures.append((ray_x, ray_y, RED))
                         hit_found = True
                         break

@@ -32,10 +32,17 @@ class ServerMainScene:
                     apply_inputs_to_ship(ship, input_data)
                     break
 
+        collision_events = []
+
         # Update all ships
         for ship in self.all_ships:
             ship.update(dt)
-            check_ship_collisions(ship, self.all_asteroids)
+
+            if check_ship_collisions(ship, self.all_asteroids):
+                collision_events.append({
+                    'player_id': ship.owner,
+                    'collision_type': 'asteroid',
+                })
 
             # Collect new projectiles
             self.all_bullets.extend(ship.bullets)
@@ -58,7 +65,8 @@ class ServerMainScene:
             'ships': self.all_ships.copy(),
             'asteroids': self.all_asteroids,
             'explosions': self.explosion_events.copy(),
-            'timestamp': time.time()
+            'timestamp': time.time(),
+            'collision_events': collision_events
         }
         self.explosion_events.clear()
         self.fake_network.send_to_client(game_state)

@@ -1,4 +1,6 @@
 from game.settings import *
+import pygame
+from rendering.sprite_manager import SpriteManager
 
 
 class Bullet:
@@ -18,6 +20,18 @@ class Bullet:
         self.owner = owner
         self.velocity = BULLET_SPEED
         self.alive = True
+
+        screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
+        scale_x = screen_width / CAMERA_VIEW_WIDTH
+        scale_y = screen_height / CAMERA_VIEW_HEIGHT
+
+        original_sprite = SpriteManager.get_sprite('bullet')
+        if original_sprite:
+            scaled_width = int(original_sprite.get_width() * scale_x)
+            scaled_height = int(original_sprite.get_height() * scale_y)
+            self.scaled_sprite = pygame.transform.scale(original_sprite, (scaled_width, scaled_height))
+        else:
+            self.scaled_sprite = None
 
     def update(self):
         self.fly()

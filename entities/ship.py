@@ -1,5 +1,5 @@
 import random
-
+import pygame
 from rendering.sprite_manager import SpriteManager
 from shared_util.ship_logic import *
 
@@ -31,7 +31,7 @@ class Ship:
         self.firing_a_weapon = False
 
         self.fire_rocket_timer = 0
-        self.fire_rocket_cooldown = 40 / 60
+        self.fire_rocket_cooldown = 30 / 60
         self.can_fire_rocket = True
 
         self.fire_bullet_timer = 0
@@ -58,15 +58,24 @@ class Ship:
         self.rocket_recharge_length = 300 / 60
         self.can_reload_rocket = False
 
-        self.alive = True
-        self.dampening_active = True
-
         self.radar_signatures = []
-        self.wants_radar_pulse = False
-
         self.radar_resolution_index = 3
         self.available_radar_resolutions = [72, 360, 720, 1440, 3600]
         self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
+        self.is_radar_on = True
+
+        self.enemy_radar_ping_coordinates = []
+
+        self.can_radar_pulse = True
+        self.can_pulse_timer = 0
+        self.can_pulse_cooldown = 150 / 60
+
+        self.alive = True
+        self.dampening_active = True
+
+        screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
+        scale_x = screen_width / CAMERA_VIEW_WIDTH
+        scale_y = screen_height / CAMERA_VIEW_HEIGHT
 
         self.ai_ships = ["aiShip", "aiShip2", "aiShip3", "aiShip4"]
 
@@ -79,7 +88,15 @@ class Ship:
         else:
             sprite_name = None
 
-        self.ship_sprite = SpriteManager.get_sprite(sprite_name)
+        # Get original sprite and scale it once
+        original_sprite = SpriteManager.get_sprite(sprite_name)
+        if original_sprite:
+            scaled_width = int(original_sprite.get_width() * scale_x)
+            scaled_height = int(original_sprite.get_height() * scale_y)
+            self.ship_sprite = pygame.transform.scale(original_sprite, (scaled_width, scaled_height))
+        else:
+            self.ship_sprite = None
+
         self.current_weapon = "rocket"
         self.rocket_ammo = MAX_ROCKETS
         self.bullet_ammo = MAX_BULLETS
@@ -125,6 +142,13 @@ class Ship:
             if self.bullet_recharge_timer > self.bullet_recharge_length:
                 self.can_reload_bullet = True
                 self.bullet_recharge_timer = 0
+
+        if self.can_radar_pulse is False:
+            self.can_pulse_timer += dt
+            if self.can_pulse_timer > self.can_pulse_cooldown:
+                self.can_radar_pulse = True
+                self.can_pulse_timer = 0
+
         if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
             self.bullet_ammo += 1
             self.can_reload_bullet = False

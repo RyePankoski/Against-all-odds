@@ -23,8 +23,7 @@ def check_ship_collisions(ship, asteroids):
 
                 ship.dx *= -0.5
                 ship.dy *= -0.5
-
-                return
+                return True
 
 
 def update_ship_facing(ship, mouse_world_pos):
@@ -118,7 +117,7 @@ def apply_inputs_to_ship(ship, input_data):
         ship.dampening_active = not ship.dampening_active
 
     if input_data.get('r_pressed'):
-        ship.wants_radar_pulse = True
+        ship.is_radar_on = not ship.is_radar_on
         # No need for can_pulse timer anymore
 
     # Radar resolution cycling (new discrete input)

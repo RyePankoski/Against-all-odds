@@ -1,19 +1,25 @@
 from shared_util.ship_logic import *
+from ship_subsystems.radar_system import RadarSystem
 import random
 import math
 
 
-
-
-
 class AI:
-    def __init__(self, ship, player_ship, all_ships, all_asteroids):
+    def __init__(self, ship, player_ship, all_ships, all_asteroids, difficulty):
         self.ship = ship
         self.player_ship = player_ship
         self.all_ships = all_ships
         self.all_asteroids = all_asteroids
-        self.detect_player_range_squared = (RADAR_PULSE_RANGE - 300) ** 2
+        self.difficulty = difficulty
 
+        self.radar = RadarSystem()
+
+        if self.difficulty == 1:
+            self.max_bullet_burst = 10
+        if self.difficulty == 2:
+            self.max_bullet_burst = 30
+
+        self.detect_player_range_squared = (RADAR_PULSE_RANGE - 300) ** 2
         self.evasive_maneuver_timer = 0
         self.evasive_maneuver_cooldown = 120
         self.can_evasive_maneuver = True
@@ -27,11 +33,15 @@ class AI:
         self.can_bullet_burst = True
         self.bullet_burst = 10
 
+        self.is_radar_on = True
+        self.can_radar_pulse = True
+        self.can_pulse_timer = 0
+        self.can_pulse_cooldown = 150 / 60
+
         self.wander_dx = 0
         self.wander_dy = 0
 
     def run(self, dt):
-
         if not self.can_evasive_maneuver:
             self.evasive_maneuver_timer += 1
             if self.evasive_maneuver_timer >= self.evasive_maneuver_cooldown:
@@ -51,17 +61,26 @@ class AI:
                 self.bullet_burst_timer = 0
 
         if self.bullet_burst <= 0:
-            self.bullet_burst = random.randint(1, 30)
+            self.bullet_burst = random.randint(1, self.max_bullet_burst)
+
+        if self.is_radar_on:
+            if self.ship.can_radar_pulse is True:
+                print("start pulse")
+                self.radar.begin_scan(self.ship, self.all_ships, self.all_asteroids)
+                self.ship.can_radar_pulse = False
+
+        if self.radar.scanning:
+            self.radar.continue_scan()
 
         self.ship.update(dt)
         check_ship_collisions(self.ship, self.all_asteroids)
-
         distance_squared = ((self.player_ship.x - self.ship.x) ** 2 + (self.player_ship.y - self.ship.y) ** 2)
 
         if self.detect_player(distance_squared):
             self.move_towards_player(distance_squared)
             self.fire_at_player(distance_squared)
-            self.evasive_maneuver()
+            if self.difficulty > 1:
+                self.evasive_maneuver()
         else:
             self.change_wander()
             self.wander()
@@ -80,6 +99,7 @@ class AI:
         dy = self.player_ship.y - self.ship.y
 
         distance = math.sqrt(distance_squared)
+        stand_off_factor = 60
 
         if distance != 0:
             normalized_dx = dx / distance
@@ -88,7 +108,7 @@ class AI:
             normalized_dx = dx
             normalized_dy = dy
 
-        if distance_squared < self.detect_player_range_squared / 50:
+        if distance_squared < self.detect_player_range_squared / stand_off_factor:
             self.ship.dx -= normalized_dx * THRUST
             self.ship.dy -= normalized_dy * THRUST
         else:
@@ -98,7 +118,7 @@ class AI:
     def fire_at_player(self, distance_squared):
 
         rocket_engage_range = self.detect_player_range_squared / 2
-        bullet_engage_range = self.detect_player_range_squared / 10
+        bullet_engage_range = self.detect_player_range_squared / 8
 
         if distance_squared < rocket_engage_range:
 
@@ -118,12 +138,11 @@ class AI:
                     self.ship.can_fire_bullet = False
 
     def evasive_maneuver(self):
-
         if not self.can_evasive_maneuver:
             return
 
         if self.player_ship.firing_a_weapon:
-            strafe_force = 15
+            strafe_force = 20
 
             if random.random() < 0.5:
 

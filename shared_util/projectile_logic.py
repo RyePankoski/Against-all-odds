@@ -1,5 +1,8 @@
+import pygame.draw
+
 from game.settings import *
 from shared_util.object_handling import *
+import math
 
 
 def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
@@ -42,48 +45,92 @@ def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
 
 
 def check_projectile_collisions(projectile, ships, asteroids):
-    for ship in ships:
+    # Damage values for different projectile types
+    DAMAGE_VALUES = {
+        "rocket": 40,
+        "bullet": 10
+    }
 
+    damage = DAMAGE_VALUES.get(projectile.name, 0)
+    ship_collision_radius_squared = (SHIP_HIT_BOX + COLLISION_BUFFER) ** 2
+
+    # Check collisions with ships
+    for ship in ships:
         if ship.owner == projectile.owner:
             continue
 
-        distance_squared = ((ship.x - projectile.x) * (ship.x - projectile.x)
-                            + (ship.y - projectile.y) * (ship.y - projectile.y))
-
-        if distance_squared < (SHIP_HIT_BOX + COLLISION_BUFFER) * (SHIP_HIT_BOX + COLLISION_BUFFER):
-            if ship.shield > 0:
-                if projectile.name == "rocket":
-                    ship.shield -= 80
-                if projectile.name == "bullet":
-                    ship.shield -= 10
-                if ship.shield < 0:
-                    ship.can_shield_recharge = False
-                    ship.shield = 0
-                    
-            elif ship.shield <= 0:
-                if projectile.name == "rocket":
-                    ship.health -= 80
-                if projectile.name == "bullet":
-                    ship.health -= 10
-
+        if _check_collision(projectile, ship.x, ship.y, ship_collision_radius_squared):
+            _apply_ship_damage(ship, damage)
             projectile.alive = False
             return
 
+    # Check collisions with asteroids
     if projectile.sector in asteroids and asteroids[projectile.sector]:
         for asteroid in asteroids[projectile.sector]:
+            radius_squared = (asteroid.radius + COLLISION_BUFFER) ** 2
 
-            distance_squared = (((asteroid.x - projectile.x) * (asteroid.x - projectile.x))
-                                + ((asteroid.y - projectile.y) * (asteroid.y - projectile.y)))
+            if _check_collision(projectile, asteroid.x, asteroid.y, radius_squared):
+                _apply_asteroid_damage(asteroid, projectile.name, damage)
+                projectile.alive = False
+                return
 
-            if distance_squared < (asteroid.radius + COLLISION_BUFFER) * (asteroid.radius + COLLISION_BUFFER):
 
-                if projectile.name == "rocket":
-                    asteroid.alive = False
-                    projectile.alive = False
-                    return
-                if projectile.name == "bullet":
-                    asteroid.health -= 10
-                    projectile.alive = False
+def _check_collision(projectile, target_x, target_y, collision_radius_squared):
+    """Check both current position and inter-frame collision"""
+    distance_squared = (target_x - projectile.x) ** 2 + (target_y - projectile.y) ** 2
+    hit_current = distance_squared < collision_radius_squared
 
-                    if asteroid.health <= 0:
-                        asteroid.alive = False
+    if hit_current:
+        return True
+
+    hit_interframe = inter_frame_collision(
+        projectile.prev_x, projectile.prev_y,
+        projectile.x, projectile.y,
+        target_x, target_y,
+        collision_radius_squared
+    )
+
+    if hit_interframe:
+        projectile.x = (projectile.x + projectile.prev_x) / 2
+        projectile.y = (projectile.y + projectile.prev_y) / 2
+        return True
+
+    return False
+
+
+def _apply_ship_damage(ship, damage):
+    """Apply damage to ship, handling shield mechanics"""
+    if ship.shield > 0:
+        ship.shield -= damage
+        if ship.shield < 0:
+            ship.can_shield_recharge = False
+            ship.shield = 0
+    else:
+        ship.health -= damage
+
+
+def _apply_asteroid_damage(asteroid, projectile_name, damage):
+    """Apply damage to asteroid based on projectile type"""
+    if projectile_name == "rocket":
+        asteroid.alive = False
+    else:  # bullet or other projectiles
+        asteroid.health -= damage
+        if asteroid.health <= 0:
+            asteroid.alive = False
+
+
+def inter_frame_collision(x1, y1, x2, y2, point_x, point_y, collision_distance_squared):
+    base_squared = (x2 - x1) ** 2 + (y2 - y1) ** 2
+
+    if base_squared == 0:
+        point_distance_squared = (point_x - x1) ** 2 + (point_y - y1) ** 2
+        return point_distance_squared <= collision_distance_squared
+
+    t = ((point_x - x1) * (x2 - x1) + (point_y - y1) * (y2 - y1)) / base_squared
+    t = max(0, min(1, t))
+
+    closest_x = x1 + t * (x2 - x1)
+    closest_y = y1 + t * (y2 - y1)
+
+    distance_squared = (point_x - closest_x) ** 2 + (point_y - closest_y) ** 2
+    return distance_squared <= collision_distance_squared

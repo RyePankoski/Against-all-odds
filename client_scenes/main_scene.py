@@ -1,4 +1,3 @@
-from rendering.render_util import *
 from rendering.camera import Camera
 from entities.ship import Ship
 from shared_util.ship_logic import *
@@ -8,6 +7,7 @@ from ship_subsystems.radar_system import RadarSystem
 from game.ai import AI
 from client_scenes.victory_screen import VictoryScreen
 from client_scenes.defeat_screen import DefeatScreen
+from rendering.world_render import WorldRender
 
 
 class MainScene:
@@ -32,18 +32,24 @@ class MainScene:
         self.radar_signatures = []
         self.explosion_events = []
 
+        # Network elements
+        self.frame = 0
+        self.server_saw_collision = False
+
         # Rendering
-        self.star_tiles = generate_star_tiles()
         self.camera = Camera(self.screen)
-        self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
 
         # Game systems
         self.radar_system = RadarSystem()
+
+        # UI components
         self.victory_screen = VictoryScreen(self.screen)
         self.defeat_screen = DefeatScreen(self.screen)
+        self.world_render = WorldRender(self.screen)
 
         # AI configuration
         self.number_of_ai = 1
+        self.ai_difficulty = 2
 
         # Initialize game
         self.setup_game()
@@ -71,11 +77,12 @@ class MainScene:
                     None
                 )
                 self.all_ships.append(ai_ship)
-                ai = AI(ai_ship, self.ship, self.all_ships, self.all_asteroids)
+                ai = AI(ai_ship, self.ship, self.all_ships, self.all_asteroids, self.ai_difficulty)
                 self.all_ai.append(ai)
 
     def run(self, dt):
         """Main game loop - handles all game updates and rendering"""
+        self.frame += 1
         self.update_ai(dt)
         self.check_game_state()
 
@@ -109,27 +116,23 @@ class MainScene:
         """Update player ship and handle radar"""
         self.ship.update(dt)
         apply_inputs_to_ship(self.ship, self.inputs)
-        self.camera.follow_target(self.ship.x, self.ship.y)
 
         # Handle radar pulse
-        if self.ship.wants_radar_pulse and self.ship.power > 20:
-            self.ship.power *= (1 - (self.ship.radar_resolution / MAX_RADAR_RESOLUTION)) - 0.2
-            self.ship.power = max(0, self.ship.power)
+        if self.ship.is_radar_on:
+            if self.ship.can_radar_pulse is True:
+                print("start pulse")
+                self.radar_signatures.clear()
+                self.radar_system.begin_scan(self.ship, self.all_ships, self.all_asteroids)
+                self.ship.can_radar_pulse = False
+                self.ship.enemy_radar_ping_coordinates.clear()
 
-            self.radar_signatures.clear()
-            self.radar_system.begin_scan(self.ship, self.all_ships, self.all_asteroids)
-            self.ship.can_pulse = False
-            self.ship.wants_radar_pulse = False
-
-        # Continue radar scanning
         if self.radar_system.scanning:
+            print("pulsing")
             self.radar_signatures.extend(self.radar_system.continue_scan())
 
     def update_game_objects(self):
         """Update all game objects and handle collisions"""
         # Handle collisions and physics
-        if self.ship:
-            check_ship_collisions(self.ship, self.all_asteroids)
 
         handle_asteroids(self.all_asteroids)
 
@@ -193,63 +196,118 @@ class MainScene:
         self.setup_game()
 
     def render(self):
+        self.camera.follow_target(self.ship.x, self.ship.y)
+
         """Render all game elements"""
-        draw_stars_tiled(self.star_tiles, self.camera, self.screen,
-                         self.camera.screen_width, self.camera.screen_width)
-        draw_ships(self.all_ships, self.camera, self.screen)
-        draw_rockets(self.all_rockets, self.camera, self.screen)
-        draw_bullets(self.all_bullets, self.camera, self.screen)
-        draw_asteroids(self.all_asteroids, self.camera, self.screen, WORLD_WIDTH, WORLD_HEIGHT)
-
-        draw_explosions(self.screen, self.explosion_events, self.camera)
+        self.world_render.draw_stars_tiled(self.camera, self.camera.screen_width, self.camera.screen_width)
+        self.world_render.draw_ships(self.all_ships, self.camera)
+        self.world_render.draw_rockets(self.all_rockets, self.camera)
+        self.world_render.draw_bullets(self.all_bullets, self.camera)
+        self.world_render.draw_asteroids(self.all_asteroids, self.camera)
+        self.world_render.draw_explosions(self.explosion_events, self.camera)
         self.explosion_events.clear()
-
         if self.all_ships:  # Make sure we have ships before accessing index 0
-            draw_radar_screen(self.screen, self.radar_signatures,
-                              (self.all_ships[0].x, self.all_ships[0].y), self.all_rockets)
-
+            self.world_render.draw_radar_screen(self.radar_signatures, self.ship.enemy_radar_ping_coordinates,
+                                                (self.all_ships[0].x, self.all_ships[0].y), self.all_rockets)
         if self.ship:
-            draw_ship_data(self.screen, self.ship, self.ui_font)
-        draw_fps(self.screen, self.clock, self.ui_font)
+            self.world_render.draw_ship_data(self.ship)
+        self.world_render.draw_fps(self.clock)
+        self.world_render.draw_reticle(self.camera)
 
     def inject_inputs(self, inputs):
         """Receive input data from client"""
         self.inputs = inputs
 
-    def inject_server_data(self, server_messages):
+    def inject_server_data(self, server_messages, dt):
         """Handle multiplayer server data"""
         for message in server_messages:
-            self.all_ships = message.get('ships', self.all_ships)
+
+            # We need to remove our ship from the server update, so we can use the lerp.
+            server_ships = message.get('ships', [])
+            for server_ship in server_ships:
+                if server_ship.owner != self.player_number:
+                    # Find and replace the corresponding ship in your list
+                    for i, local_ship in enumerate(self.all_ships):
+                        if local_ship.owner == server_ship.owner:
+                            self.all_ships[i] = server_ship
+                            break
+                    else:
+                        # New ship not in our list yet
+                        self.all_ships.append(server_ship)
+
             self.all_rockets = message.get('rockets', self.all_rockets)
             self.all_bullets = message.get('bullets', self.all_bullets)
             self.all_asteroids = message.get('asteroids', self.all_asteroids)
             self.explosion_events.extend(message.get('explosions', []))
+
+            # We need to check for collision events, so we can start listening to the server again.
+            collision_events = message.get('collision_events', [])
+            for collision_event in collision_events:
+                if collision_event['player_id'] == self.ship.owner:
+                    print("Server saw a collision")
+                    self.server_saw_collision = True
+                    break
 
             ships = message.get('ships', [])
             for ship in ships:
                 if ship.owner == self.player_number:
                     self.ship.shield = ship.shield
                     self.ship.health = ship.health
-                    self.interpolate(ship)
+                    self.interpolate(ship, dt)
                     break
 
-    def interpolate(self, ship):
-        """Interpolate player ship position for multiplayer"""
-        x_diff = abs(ship.x - self.ship.x)
-        y_diff = abs(ship.y - self.ship.y)
+    def interpolate(self, ship, dt):
+        """Interpolate player ship position for multiplayer with smooth predictive correction."""
 
-        x_interpolate = x_diff / 2
-        y_interpolate = y_diff / 2
+        # Base parameters
+        position_error_margin = 75
+        velocity_error_margin = 10
+        correction_strength = 0.1
+        periodic_correction_strength = 0.25
 
-        if ship.x > self.ship.x:
-            self.ship.x += x_interpolate
-        elif ship.x < self.ship.x:
-            self.ship.x -= x_interpolate
+        # Predict server position based on velocity
+        predicted_x = ship.x + ship.dx * dt
+        predicted_y = ship.y + ship.dy * dt
 
-        if ship.y > self.ship.y:
-            self.ship.y += y_interpolate
-        elif ship.y < self.ship.y:
-            self.ship.y -= y_interpolate
+        # Periodic stronger correction every 120 frames
+        if self.frame % 120 == 0:
+            x_error = predicted_x - self.ship.x
+            y_error = predicted_y - self.ship.y
+            self.ship.x += x_error * periodic_correction_strength
+            self.ship.y += y_error * periodic_correction_strength
 
-        self.ship.dx = ship.dx
-        self.ship.dy = ship.dy
+        x_error = predicted_x - self.ship.x
+        y_error = predicted_y - self.ship.y
+        dx_error = ship.dx - self.ship.dx
+        dy_error = ship.dy - self.ship.dy
+
+        x_diff = abs(x_error)
+        y_diff = abs(y_error)
+        dx_diff = abs(dx_error)
+        dy_diff = abs(dy_error)
+
+        if x_diff > position_error_margin or y_diff > position_error_margin:
+            scale = min(1.0, max(x_diff, y_diff) / position_error_margin)
+            self.ship.x += x_error * correction_strength * scale
+            self.ship.y += y_error * correction_strength * scale
+        else:
+            self.ship.x += x_error * correction_strength
+            self.ship.y += y_error * correction_strength
+
+        # Velocity correction
+        if dx_diff > velocity_error_margin or dy_diff > velocity_error_margin:
+            scale = min(1.0, max(dx_diff, dy_diff) / velocity_error_margin)
+            self.ship.dx += dx_error * correction_strength * scale
+            self.ship.dy += dy_error * correction_strength
+        else:
+            self.ship.dx += dx_error * correction_strength
+            self.ship.dy += dy_error * correction_strength
+
+        if self.server_saw_collision:
+            print("Accepting dx dy from server state.")
+            self.ship.dx = ship.dx
+            self.ship.dy = ship.dy
+            self.server_saw_collision = False
+
+
+2
