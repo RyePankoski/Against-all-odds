@@ -6,7 +6,6 @@ A complete client-server multiplayer system built from scratch in Python, demons
 <img width="2559" height="1439" alt="Screenshot 2025-09-08 160100" src="https://github.com/user-attachments/assets/53ad3fad-37e1-40af-8236-2be1d07f74e2" />
 
 
-
 ## Core Technical Achievements
 
 **Authoritative Server Architecture**
@@ -41,7 +40,7 @@ Input       Lag Simulation     State Authority
 Lerp        Bandwidth Mgmt     Collision Detection
 ```
 
-The networking layer simulates realistic latency (20-200ms) for testing, with graceful degradation for high-latency connections.
+The networking layer simulates realistic latency (20-200ms) for testing.
 
 ## Technical Implementation
 
