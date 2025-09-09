@@ -1,11 +1,14 @@
 from game.settings import *
 import pygame
 from rendering.sprite_manager import SpriteManager
+from entities.projectiles.projectile import Projectile
 
 
-class Bullet:
+class Rocket(Projectile):
     def __init__(self, x, y, dx, dy, angle, owner, true_angle):
-        self.name = "bullet"
+        super().__init__()
+
+        self.name = "rocket"
         self.x = x
         self.y = y
         self.prev_x = x
@@ -18,14 +21,15 @@ class Bullet:
         self.sector = 0
 
         self.owner = owner
-        self.velocity = BULLET_SPEED
+        self.velocity = 0
+        self.fuel = ROCKET_FUEL
         self.alive = True
 
         screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
         scale_x = screen_width / CAMERA_VIEW_WIDTH
         scale_y = screen_height / CAMERA_VIEW_HEIGHT
 
-        original_sprite = SpriteManager.get_sprite('bullet')
+        original_sprite = SpriteManager.get_sprite('rocket')
         if original_sprite:
             scaled_width = int(original_sprite.get_width() * scale_x)
             scaled_height = int(original_sprite.get_height() * scale_y)
@@ -33,13 +37,18 @@ class Bullet:
         else:
             self.scaled_sprite = None
 
-    def update(self):
+    def run(self):
         self.fly()
 
     def fly(self):
+        if self.fuel > 0:
+            self.velocity += ROCKET_THRUST
+            self.fuel -= 1
+
         self.prev_x = self.x
         self.prev_y = self.y
 
         self.x += self.dx + (self.true_dx * self.velocity)
         self.y += self.dy + (self.true_dy * self.velocity)
+
         self.sector = self.x // SECTOR_SIZE, self.y // SECTOR_SIZE

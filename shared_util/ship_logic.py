@@ -1,5 +1,4 @@
 from game.settings import *
-from rendering.sound_manager import SoundManager
 
 
 def check_ship_collisions(ship, asteroids):
@@ -9,7 +8,7 @@ def check_ship_collisions(ship, asteroids):
                                 ((asteroid.y - ship.y) * (asteroid.y - ship.y)) -
                                 (asteroid.radius * asteroid.radius))
 
-            if distance_squared < (asteroid.radius + SHIP_HIT_BOX)**2:
+            if distance_squared < (asteroid.radius + SHIP_HIT_BOX) ** 2:
                 asteroid.alive = False
                 print(f"{ship.owner} hit an asteroid!")
 
@@ -49,8 +48,8 @@ def update_ship_facing(ship, mouse_world_pos):
 
 def fire_weapon(ship, weapon_type):
     import math
-    from entities.rocket import Rocket
-    from entities.bullet import Bullet
+    from entities.projectiles.rocket import Rocket
+    from entities.projectiles.bullet import Bullet
 
     if weapon_type == "rocket" and ship.rocket_ammo <= 0:
         return
@@ -68,11 +67,11 @@ def fire_weapon(ship, weapon_type):
     if weapon_type == "rocket":
         ship.rocket_ammo -= 1
         new_rocket = Rocket(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
-        ship.rockets.append(new_rocket)
+        ship.all_projectiles.append(new_rocket)
     elif weapon_type == "bullet":
         ship.bullet_ammo -= 1
         new_bullet = Bullet(ship.x, ship.y, dx, dy, ship.facing_angle, ship.owner, true_angle)
-        ship.bullets.append(new_bullet)
+        ship.all_projectiles.append(new_bullet)
 
 
 def apply_inputs_to_ship(ship, input_data):
@@ -126,10 +125,10 @@ def apply_inputs_to_ship(ship, input_data):
         # You'll need to implement this cycling logic
         ship.cycle_radar_resolution()
 
+    if input_data.get('alt_pressed') and ship.can_parry:
+        ship.can_parry = False
+        ship.is_parrying = True
+
     # Update ship facing angle based on mouse position
     if 'mouse_world_pos' in input_data:
         update_ship_facing(ship, input_data['mouse_world_pos'])
-
-    if input_data['space_pressed'] and ship.can_parry:
-        ship.can_parry = False
-        ship.is_parrying = True

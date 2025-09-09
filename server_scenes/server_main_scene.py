@@ -1,20 +1,19 @@
 import time
-from entities.ship import Ship
+from entities.ships.ship import Ship
 from shared_util.ship_logic import *
 from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
-from entities.battleship import BattleShip
+from entities.ships.battleship import BattleShip
 
 
 class ServerMainScene:
     def __init__(self, fake_net):
         self.fake_network = fake_net
         self.all_ships = []
-
-        self.all_rockets = []
-        self.all_bullets = []
+        self.all_projectiles = []
         self.explosion_events = []
-        self.all_asteroids = generate_some_asteroids()
+        self.all_asteroids = generate_some_asteroids(MAX_ASTEROIDS)
+        self.current_asteroids = MAX_ASTEROIDS
 
         # Create ships
         ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)
@@ -49,23 +48,26 @@ class ServerMainScene:
                 })
 
             # Collect new projectiles
-            self.all_bullets.extend(ship.bullets)
-            self.all_rockets.extend(ship.rockets)
-            ship.bullets.clear()
-            ship.rockets.clear()
+            self.all_projectiles.extend(ship.all_projectiles)
+            ship.all_projectiles.clear()
 
         # Update game objects
-        handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
-        handle_rockets(self.all_rockets, self.all_ships, self.all_asteroids, self.explosion_events)
-        handle_asteroids(self.all_asteroids)
+        handle_projectile(self.all_projectiles, self.all_ships, self.all_asteroids, self.explosion_events)
 
-        # Remove dead ships
+        # Handle asteroids
+        asteroid_diff = handle_asteroids(self.all_asteroids)
+        self.current_asteroids -= asteroid_diff
+
+        if self.current_asteroids < MAX_ASTEROIDS:
+            for _ in range(asteroid_diff):
+                spawn_single_asteroid(self.all_asteroids)
+                self.current_asteroids += 1
+
         self.all_ships = [ship for ship in self.all_ships if ship.alive]
 
         # Send state to clients
         game_state = {
-            'rockets': self.all_rockets.copy(),
-            'bullets': self.all_bullets.copy(),
+            'all_projectiles': self.all_projectiles,
             'ships': self.all_ships.copy(),
             'asteroids': self.all_asteroids,
             'explosions': self.explosion_events.copy(),

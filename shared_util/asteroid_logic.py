@@ -1,12 +1,13 @@
 from shared_util.object_handling import *
 from game.settings import *
-from entities.asteroid import Asteroid
+from entities.world_entities.asteroid import Asteroid
 import random
 
 
 def handle_asteroids(all_asteroids):
     asteroids_to_remove = []
     asteroids_to_relocate = []
+    sum_of_removed_asteroids = 0
 
     for sector, asteroid_list in all_asteroids.items():
         for asteroid in asteroid_list[:]:
@@ -16,6 +17,7 @@ def handle_asteroids(all_asteroids):
 
             if not asteroid.alive:
                 asteroids_to_remove.append(asteroid)
+                sum_of_removed_asteroids += 1
             elif old_sector != new_sector:
                 asteroids_to_relocate.append((asteroid, old_sector, new_sector))
 
@@ -30,15 +32,42 @@ def handle_asteroids(all_asteroids):
     if asteroids_to_remove:
         remove_objects(asteroids_to_remove, all_asteroids)
 
+    return sum_of_removed_asteroids
 
-def generate_some_asteroids():
+
+def generate_some_asteroids(number_of_asteroids):
     asteroids = {}
-    for _ in range(100):
-        sectorX = (WORLD_WIDTH / 2 + 200) // SECTOR_SIZE
-        sectorY = (WORLD_HEIGHT / 2 + 200) // SECTOR_SIZE
+    margin = 100  # Distance outside the screen bounds
 
-        asteroid = Asteroid(WORLD_WIDTH / 2 + 200, WORLD_HEIGHT / 2 + 200,
-                            random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(30, 100),
+    for _ in range(number_of_asteroids):
+        # Randomly choose which edge to spawn from
+        edge = random.choice(['top', 'bottom', 'left', 'right'])
+
+        if edge == 'top':
+            x = random.uniform(-margin, WORLD_WIDTH + margin)
+            y = -margin
+            vel_y = random.uniform(0.2, 1.0)  # Move downward
+            vel_x = random.uniform(-0.5, 0.5)
+        elif edge == 'bottom':
+            x = random.uniform(-margin, WORLD_WIDTH + margin)
+            y = WORLD_HEIGHT + margin
+            vel_y = random.uniform(-1.0, -0.2)  # Move upward
+            vel_x = random.uniform(-0.5, 0.5)
+        elif edge == 'left':
+            x = -margin
+            y = random.uniform(-margin, WORLD_HEIGHT + margin)
+            vel_x = random.uniform(0.2, 1.0)  # Move rightward
+            vel_y = random.uniform(-0.5, 0.5)
+        else:  # right
+            x = WORLD_WIDTH + margin
+            y = random.uniform(-margin, WORLD_HEIGHT + margin)
+            vel_x = random.uniform(-1.0, -0.2)  # Move leftward
+            vel_y = random.uniform(-0.5, 0.5)
+
+        sectorX = x // SECTOR_SIZE
+        sectorY = y // SECTOR_SIZE
+
+        asteroid = Asteroid(x, y, vel_x, vel_y, random.uniform(50, 200),
                             (WORLD_WIDTH, WORLD_HEIGHT), (sectorX, sectorY))
 
         if (sectorX, sectorY) in asteroids:
@@ -47,3 +76,45 @@ def generate_some_asteroids():
             asteroids[(sectorX, sectorY)] = [asteroid]
 
     return asteroids
+
+
+def spawn_single_asteroid(existing_asteroids):
+    margin = 100  # Distance outside the screen bounds
+
+    # Randomly choose which edge to spawn from
+    edge = random.choice(['top', 'bottom', 'left', 'right'])
+
+    if edge == 'top':
+        x = random.uniform(-margin, WORLD_WIDTH + margin)
+        y = -margin
+        vel_y = random.uniform(0.2, 1.0)  # Move downward into screen
+        vel_x = random.uniform(-0.5, 0.5)
+    elif edge == 'bottom':
+        x = random.uniform(-margin, WORLD_WIDTH + margin)
+        y = WORLD_HEIGHT + margin
+        vel_y = random.uniform(-1.0, -0.2)  # Move upward into screen
+        vel_x = random.uniform(-0.5, 0.5)
+    elif edge == 'left':
+        x = -margin
+        y = random.uniform(-margin, WORLD_HEIGHT + margin)
+        vel_x = random.uniform(0.2, 1.0)  # Move rightward into screen
+        vel_y = random.uniform(-0.5, 0.5)
+    else:  # right
+        x = WORLD_WIDTH + margin
+        y = random.uniform(-margin, WORLD_HEIGHT + margin)
+        vel_x = random.uniform(-1.0, -0.2)  # Move leftward into screen
+        vel_y = random.uniform(-0.5, 0.5)
+
+    sectorX = x // SECTOR_SIZE
+    sectorY = y // SECTOR_SIZE
+
+    asteroid = Asteroid(x, y, vel_x, vel_y, random.uniform(30, 100),
+                        (WORLD_WIDTH, WORLD_HEIGHT), (sectorX, sectorY))
+
+    # Add to the existing asteroids dictionary
+    if (sectorX, sectorY) in existing_asteroids:
+        existing_asteroids[(sectorX, sectorY)].append(asteroid)
+    else:
+        existing_asteroids[(sectorX, sectorY)] = [asteroid]
+
+    return asteroid  # Return the created asteroid in case you need it

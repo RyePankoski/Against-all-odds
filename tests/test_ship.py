@@ -1,7 +1,7 @@
 # tests/test_ship.py
 import unittest
 import pygame
-from entities.ship import Ship
+from entities.ships.ship import Ship
 from rendering.camera import Camera
 from shared_util.ship_logic import *
 

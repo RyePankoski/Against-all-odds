@@ -55,7 +55,6 @@ class AI:
         self.behaviors()
 
     def behaviors(self):
-        self.ship.shield = 0
         distance_squared = ((self.player_ship.x - self.ship.x) ** 2 +
                             (self.player_ship.y - self.ship.y) ** 2)
 
@@ -171,8 +170,8 @@ class AI:
         lead_x = self.player_ship.x + (relative_dx * time_to_target)
         lead_y = self.player_ship.y + (relative_dy * time_to_target)
 
-        screen_x, screen_y = self.camera.world_to_screen(lead_x, lead_y)
-        pygame.draw.circle(self.screen, RED, (screen_x, screen_y), 10)
+        # screen_x, screen_y = self.camera.world_to_screen(lead_x, lead_y)
+        # pygame.draw.circle(self.screen, RED, (screen_x, screen_y), 10)
 
         update_ship_facing(self.ship, (int(lead_x), int(lead_y)))
 

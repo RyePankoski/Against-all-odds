@@ -18,9 +18,9 @@ class Asteroid:
         self.x += self.dx
         self.y += self.dy
 
-        if self.x > self.world_dimensions[0] or self.x < 0:
+        if self.x > self.world_dimensions[0] + 150 or self.x < 0 - 150:
             self.alive = False
-        if self.y > self.world_dimensions[1] or self.y < 0:
+        if self.y > self.world_dimensions[1] + 150 or self.y < 0 - 150:
             self.alive = False
 
         self.sector = int(self.x // SECTOR_SIZE), int(self.y // SECTOR_SIZE)

@@ -2,7 +2,7 @@ from game.settings import *
 import pygame
 from rendering.sprite_manager import SpriteManager
 import random
-from entities.ship import Ship
+from entities.ships.ship import Ship
 
 
 class BattleShip(Ship):

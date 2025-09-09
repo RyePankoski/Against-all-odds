@@ -1,47 +1,29 @@
-import pygame.draw
-
 from game.settings import *
 from shared_util.object_handling import *
-from entities.battleship import BattleShip
+from entities.ships.battleship import BattleShip
+from entities.projectiles.rocket import Rocket
+from entities.projectiles.bullet import Bullet
 
 
-def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
-    rockets_to_remove = []
+def handle_projectile(all_projectiles, all_ships, all_asteroids, explosion_events):
+    projectiles_to_remove = []
 
-    for rocket in all_rockets:
-        rocket.update()
-        check_projectile_collisions(rocket, all_ships, all_asteroids)  # Direct call
+    for projectile in all_projectiles:
+        projectile.run()
+        check_projectile_collisions(projectile, all_ships, all_asteroids)
 
-        if not rocket.alive:
-            rockets_to_remove.append(rocket)
-            explosion_events.append((rocket.x, rocket.y, ORANGE, 150))
-            continue
+        if not projectile.alive:
+            projectiles_to_remove.append(projectile)
 
-        # Remove rockets that are way outside the world
-        if rocket.x < -100 or rocket.x > WORLD_WIDTH + 100 or rocket.y < -100 or rocket.y > WORLD_HEIGHT + 100:
-            rockets_to_remove.append(rocket)
+            if isinstance(projectile, Rocket):
+                explosion_events.append((projectile.x, projectile.y, ORANGE, 150))
+            elif isinstance(projectile, Bullet):
+                explosion_events.append((projectile.x, projectile.y, CYAN, 50))
 
-    if rockets_to_remove:
-        remove_objects(rockets_to_remove, all_rockets)
+        if projectile.x < -100 or projectile.x > WORLD_WIDTH + 100 or projectile.y < -100 or projectile.y > WORLD_HEIGHT + 100:
+            projectiles_to_remove.append(projectile)
 
-
-def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
-    bullets_to_remove = []
-
-    for bullet in all_bullets:
-        bullet.update()
-        check_projectile_collisions(bullet, all_ships, all_asteroids)  # Direct call
-
-        if not bullet.alive:
-            explosion_events.append((bullet.x, bullet.y, PALE_BLUE, 50))
-            bullets_to_remove.append(bullet)
-            continue
-
-        if bullet.x < -100 or bullet.x > WORLD_WIDTH + 100 or bullet.y < -100 or bullet.y > WORLD_HEIGHT + 100:
-            bullets_to_remove.append(bullet)
-
-    if bullets_to_remove:
-        remove_objects(bullets_to_remove, all_bullets)
+    remove_objects(projectiles_to_remove, all_projectiles)
 
 
 def check_projectile_collisions(projectile, ships, asteroids):
@@ -52,7 +34,6 @@ def check_projectile_collisions(projectile, ships, asteroids):
     }
 
     damage = DAMAGE_VALUES.get(projectile.name, 0)
-
     parry_collision_radius_squared = (PARRY_RANGE + COLLISION_BUFFER) ** 2
 
     # Check collisions with ships

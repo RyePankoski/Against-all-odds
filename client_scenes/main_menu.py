@@ -3,7 +3,7 @@ from game.settings import *
 from lookup_tables import precomputed_angles
 import random
 from ui_components.button import Button
-from entities.ship import Ship
+from entities.ships.ship import Ship
 import math
 import pygame
 
@@ -64,13 +64,13 @@ class MainMenu:
                 if button.button_id == "single_player_button":
                     self.game_state = "single_player"
                 elif button.button_id == "create_server_button":
-                    self.game_state = "multiplayer"
+                    self.game_state = "create_server"
                 elif button.button_id == "join_server_button":
-                    pass
+                    self.game_state = "join_server"
                 elif button.button_id == "settings_button":
-                    pass
+                    self.game_state = "settings"
                 elif button.button_id == "credits_button":
-                    pass
+                    self.game_state = "credits"
                 elif button.button_id == "exit_game_button":
                     pygame.quit()
 

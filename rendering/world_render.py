@@ -2,7 +2,8 @@ import pygame
 from game.settings import *
 import math
 import random
-from entities.battleship import BattleShip
+from entities.ships.battleship import BattleShip
+from entities.projectiles.rocket import Rocket
 
 
 def generate_star_tiles():
@@ -148,27 +149,13 @@ class WorldRender:
                 screen_x, screen_y = camera.world_to_screen(tile_world_x, tile_world_y)
                 self.screen.blit(tile_surface, (screen_x, screen_y))
 
-    def draw_rockets(self, rockets, camera):
-        for rocket in rockets:
-            if camera.is_visible(rocket.x, rocket.y):
-                screen_x, screen_y = camera.world_to_screen(rocket.x, rocket.y)
+    def draw_projectiles(self, projectiles, camera):
+        for projectile in projectiles:
+            if camera.is_visible(projectile.x, projectile.y):
+                screen_x, screen_y = camera.world_to_screen(projectile.x, projectile.y)
 
-                if rocket.scaled_sprite:
-                    rotated_sprite = pygame.transform.rotate(rocket.scaled_sprite, rocket.angle)
-                    rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
-                    self.screen.blit(rotated_sprite, rotated_rect)
-                else:
-                    # Fallback with scaled radius
-                    scaled_radius = int(3 * camera.scale_x)
-                    pygame.draw.circle(self.screen, YELLOW, (screen_x, screen_y), scaled_radius)
-
-    def draw_bullets(self, bullets, camera):
-        for bullet in bullets:
-            if camera.is_visible(bullet.x, bullet.y):
-                screen_x, screen_y = camera.world_to_screen(bullet.x, bullet.y)
-
-                if bullet.scaled_sprite:
-                    rotated_sprite = pygame.transform.rotate(bullet.scaled_sprite, bullet.angle)
+                if projectile.scaled_sprite:
+                    rotated_sprite = pygame.transform.rotate(projectile.scaled_sprite, projectile.angle)
                     rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
                     self.screen.blit(rotated_sprite, rotated_rect)
                 else:
@@ -323,7 +310,7 @@ class WorldRender:
         # Draw to screen
         self.screen.blit(self.ship_panel_cache, (10, 10))
 
-    def draw_radar_screen(self, signatures, enemy_pings, ship_pos, rockets):
+    def draw_radar_screen(self, signatures, enemy_pings, ship_pos, projectiles):
         width, height = pygame.display.get_desktop_sizes()[0]
 
         offset = 300
@@ -366,18 +353,19 @@ class WorldRender:
                 pygame.draw.circle(self.screen, sig_color, (int(screen_x), int(screen_y)), 2)
 
         # --- Rockets ---
-        for rocket in rockets:
-            relative_x = rocket.x - ship_pos[0]
-            relative_y = rocket.y - ship_pos[1]
+        for projectile in projectiles:
+            if isinstance(projectile, Rocket):
+                relative_x = projectile.x - ship_pos[0]
+                relative_y = projectile.y - ship_pos[1]
 
-            radar_x = relative_x * radar_scale
-            radar_y = relative_y * radar_scale
+                radar_x = relative_x * radar_scale
+                radar_y = relative_y * radar_scale
 
-            screen_x = radar_screen_position[0] + radar_x
-            screen_y = radar_screen_position[1] + radar_y
+                screen_x = radar_screen_position[0] + radar_x
+                screen_y = radar_screen_position[1] + radar_y
 
-            if (radar_x * radar_x + radar_y * radar_y) <= radar_screen_size * radar_screen_size:
-                pygame.draw.circle(self.screen, RED, (int(screen_x), int(screen_y)), 1)
+                if (radar_x * radar_x + radar_y * radar_y) <= radar_screen_size * radar_screen_size:
+                    pygame.draw.circle(self.screen, RED, (int(screen_x), int(screen_y)), 1)
 
         # --- Enemy pings ---
         for angle in enemy_pings:

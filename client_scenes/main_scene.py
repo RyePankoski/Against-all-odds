@@ -1,5 +1,5 @@
 from rendering.camera import Camera
-from entities.ship import Ship
+from entities.ships.ship import Ship
 from shared_util.ship_logic import *
 from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
@@ -9,25 +9,25 @@ from client_scenes.victory_screen import VictoryScreen
 from client_scenes.defeat_screen import DefeatScreen
 from rendering.world_render import WorldRender
 from rendering.sound_manager import SoundManager
-from entities.battleship import BattleShip
+from entities.ships.battleship import BattleShip
 
 
 class MainScene:
-    def __init__(self, screen, clock, connected, player_number):
+    def __init__(self, screen, clock, state, player_number):
         self.ship = None
         self.screen = screen
         self.clock = clock
-        self.connected = connected
+        self.state = state
+        self.connected = True if self.state == "connected" else False
         self.player_number = player_number
 
         # Game state
         self.victory = False
         self.defeat = False
-        self.inputs = []
+        self.inputs = {}
 
         # Game objects
-        self.all_bullets = []
-        self.all_rockets = []
+        self.all_projectiles = []
         self.all_asteroids = {}
         self.all_ships = []
         self.all_ai = []
@@ -59,6 +59,7 @@ class MainScene:
 
         # Initialize game
         self.setup_game()
+        self.current_asteroids = MAX_ASTEROIDS
 
     def setup_game(self):
         """Initialize the game world and entities"""
@@ -66,8 +67,8 @@ class MainScene:
         self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
         self.all_ships.append(self.ship)
 
-        # if not self.connected:
-        #     self.all_asteroids = generate_some_asteroids()
+        if not self.connected:
+            self.all_asteroids = generate_some_asteroids(MAX_ASTEROIDS)
 
         # Create AI ships if in single player
         self.spawn_ai_ships()
@@ -93,7 +94,6 @@ class MainScene:
     def run(self, dt):
         """Main game loop - handles all game updates and rendering"""
         self.frame += 1
-        self.update_ai(dt)
         self.check_game_state()
 
         if self.ship:
@@ -101,6 +101,7 @@ class MainScene:
 
         if not self.connected:
             self.update_game_objects()
+            self.update_ai(dt)
 
         self.render()
         self.handle_victory_screen()
@@ -133,6 +134,9 @@ class MainScene:
         apply_inputs_to_ship(self.ship, self.inputs)
         self.handle_sounds(self.inputs)
 
+        if not self.connected and self.all_asteroids:
+            check_ship_collisions(self.ship, self.all_asteroids)
+
         # Handle radar pulse
         if self.ship.is_radar_on:
             if self.ship.can_radar_pulse is True:
@@ -148,29 +152,32 @@ class MainScene:
         """Update all game objects and handle collisions"""
         # Handle collisions and physics
 
-        handle_asteroids(self.all_asteroids)
+        asteroid_diff = handle_asteroids(self.all_asteroids)
+        self.current_asteroids -= asteroid_diff
+
+        if self.current_asteroids < MAX_ASTEROIDS:
+            for _ in range(asteroid_diff):
+                spawn_single_asteroid(self.all_asteroids)
+                self.current_asteroids += 1
+
+        print(f"{self.current_asteroids}")
 
         # Collect projectiles from ships
         self.collect_projectiles()
-
         # Update projectiles
         self.update_projectiles()
-
         # Remove dead ships
         self.remove_dead_ships()
 
     def collect_projectiles(self):
         """Collect projectiles from all ships"""
         for ship in self.all_ships:
-            self.all_bullets.extend(ship.bullets)
-            self.all_rockets.extend(ship.rockets)
-            ship.bullets.clear()
-            ship.rockets.clear()
+            self.all_projectiles.extend(ship.all_projectiles)
+            ship.all_projectiles.clear()
 
     def update_projectiles(self):
         """Update all projectiles and handle collisions"""
-        handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
-        handle_rockets(self.all_rockets, self.all_ships, self.all_asteroids, self.explosion_events)
+        handle_projectile(self.all_projectiles, self.all_ships, self.all_asteroids, self.explosion_events)
 
     def remove_dead_ships(self):
         """Remove ships that are no longer alive"""
@@ -195,9 +202,7 @@ class MainScene:
 
     def reset_game(self):
         """Reset game state for new game"""
-        # Clear all game objects
-        self.all_bullets.clear()
-        self.all_rockets.clear()
+        self.all_projectiles.clear()
         self.all_asteroids.clear()
         self.all_ships.clear()
         self.all_ai.clear()
@@ -215,8 +220,7 @@ class MainScene:
         """Render all game elements"""
         self.world_render.draw_stars_tiled(self.camera, self.camera.screen_width, self.camera.screen_width)
         self.world_render.draw_ships(self.all_ships, self.camera)
-        self.world_render.draw_rockets(self.all_rockets, self.camera)
-        self.world_render.draw_bullets(self.all_bullets, self.camera)
+        self.world_render.draw_projectiles(self.all_projectiles, self.camera)
         self.world_render.draw_asteroids(self.all_asteroids, self.camera)
         self.world_render.draw_explosions(self.explosion_events, self.camera)
         self.explosion_events.clear()
@@ -225,7 +229,7 @@ class MainScene:
             self.camera.follow_target(self.ship.x, self.ship.y)
             self.world_render.draw_ship_data(self.ship)
             self.world_render.draw_radar_screen(self.radar_signatures, self.ship.enemy_radar_ping_coordinates,
-                                                (self.all_ships[0].x, self.all_ships[0].y), self.all_rockets)
+                                                (self.all_ships[0].x, self.all_ships[0].y), self.all_projectiles)
         self.world_render.draw_fps(self.clock)
 
     def inject_inputs(self, inputs):
@@ -262,8 +266,7 @@ class MainScene:
             server_owners = {ship.owner for ship in server_ships}
             server_owners.add(self.player_number)  # Keep your own ship
             self.all_ships = [ship for ship in self.all_ships if ship.owner in server_owners]
-            self.all_rockets = message.get('rockets', self.all_rockets)
-            self.all_bullets = message.get('bullets', self.all_bullets)
+            self.all_projectiles = message.get('all_projectiles', self.all_projectiles)
             self.all_asteroids = message.get('asteroids', self.all_asteroids)
             self.explosion_events.extend(message.get('explosions', []))
 
@@ -285,12 +288,11 @@ class MainScene:
 
     def interpolate(self, ship, dt):
         """Interpolate player ship position for multiplayer with smooth predictive correction."""
-
         # Base parameters
         position_error_margin = 75
-        velocity_error_margin = 20
-        correction_strength = 0.08
-        periodic_correction_strength = 0.25
+        velocity_error_margin = 50
+        correction_strength = 0.01
+        periodic_correction_strength = 0.05
 
         # Predict server position based on velocity
         predicted_x = ship.x + ship.dx * dt
@@ -314,6 +316,7 @@ class MainScene:
         dy_diff = abs(dy_error)
 
         if x_diff > position_error_margin or y_diff > position_error_margin:
+            print("Correcting pos")
             scale = min(1.0, max(x_diff, y_diff) / position_error_margin)
             self.ship.x += x_error * correction_strength * scale
             self.ship.y += y_error * correction_strength * scale
@@ -323,6 +326,7 @@ class MainScene:
 
         # Velocity correction
         if dx_diff > velocity_error_margin or dy_diff > velocity_error_margin:
+            print("Correcting vel")
             scale = min(1.0, max(dx_diff, dy_diff) / velocity_error_margin)
             self.ship.dx += dx_error * correction_strength * scale
             self.ship.dy += dy_error * correction_strength * scale

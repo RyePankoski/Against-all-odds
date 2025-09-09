@@ -20,6 +20,7 @@ class Ship:
         # Projectile stuff
         self.rockets = []
         self.bullets = []
+        self.all_projectiles = []
 
         # State stuff
         self.power = SHIP_POWER
