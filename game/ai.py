@@ -51,14 +51,11 @@ class AI:
 
     def run(self, dt):
         self.update_counters()
-
-        # Remove this once we have the radar figured out
-        # self.radar_system()
-
         self.handle_ship(dt)
         self.behaviors()
 
     def behaviors(self):
+        self.ship.shield = 0
         distance_squared = ((self.player_ship.x - self.ship.x) ** 2 +
                             (self.player_ship.y - self.ship.y) ** 2)
 
@@ -70,9 +67,15 @@ class AI:
         # Movement behavior
         if self.difficulty > 3 and self.ship.shield <= 20:
             self.flee_player(distance_squared)
+
+            if self.difficulty > 4:
+                self.parry()
+
             return
 
+        # 5 difficulty behaviors
         if self.difficulty > 4:
+            self.parry()
             self.predator()
 
         # Combat behavior
@@ -87,6 +90,12 @@ class AI:
             self.lead_shots(distance_squared)
         else:
             self.aim_at_player()
+
+    def parry(self):
+        if self.ship.can_parry and self.player_ship.firing_a_weapon:
+            if random.random() < 0.01:
+                self.ship.can_parry = False
+                self.ship.is_parrying = True
 
     def predator(self):
         pass
@@ -278,7 +287,7 @@ class AI:
             self.radar.continue_scan()
 
     def handle_ship(self, dt):
-        self.ship.update(dt)
+        self.ship.run(dt)
         check_ship_collisions(self.ship, self.all_asteroids)
 
     def get_ai_squad_mates(self):

@@ -129,3 +129,7 @@ def apply_inputs_to_ship(ship, input_data):
     # Update ship facing angle based on mouse position
     if 'mouse_world_pos' in input_data:
         update_ship_facing(ship, input_data['mouse_world_pos'])
+
+    if input_data['space_pressed'] and ship.can_parry:
+        ship.can_parry = False
+        ship.is_parrying = True

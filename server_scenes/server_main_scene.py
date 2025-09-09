@@ -3,12 +3,14 @@ from entities.ship import Ship
 from shared_util.ship_logic import *
 from shared_util.asteroid_logic import *
 from shared_util.projectile_logic import *
+from entities.battleship import BattleShip
 
 
 class ServerMainScene:
     def __init__(self, fake_net):
         self.fake_network = fake_net
         self.all_ships = []
+
         self.all_rockets = []
         self.all_bullets = []
         self.explosion_events = []
@@ -17,10 +19,12 @@ class ServerMainScene:
         # Create ships
         ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)
         ship2 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, None)
-        self.all_ships = [ship1, ship2]
+
+        battleship = BattleShip(WORLD_WIDTH / 2 + 100, WORLD_HEIGHT / 2 + 100)
+
+        self.all_ships = [ship1, ship2, battleship]
 
     def run(self, dt):
-        # Process client inputs
         input_messages = self.fake_network.get_server_messages()
         for message in input_messages:
             player_id = message.get('player_id')
@@ -36,7 +40,7 @@ class ServerMainScene:
 
         # Update all ships
         for ship in self.all_ships:
-            ship.update(dt)
+            ship.run(dt)
 
             if check_ship_collisions(ship, self.all_asteroids):
                 collision_events.append({

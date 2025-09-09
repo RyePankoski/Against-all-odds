@@ -30,7 +30,6 @@ class MainScene:
         self.all_rockets = []
         self.all_asteroids = {}
         self.all_ships = []
-        self.all_battleships = []
         self.all_ai = []
         self.radar_signatures = []
         self.explosion_events = []
@@ -53,13 +52,10 @@ class MainScene:
 
         # AI configuration
         self.number_of_ai = 1
-        self.ai_difficulty = 4
+        self.ai_difficulty = 5
 
-        if self.ai_difficulty > 4:
-            self.number_of_ai += 1
-
-        battleship = BattleShip(WORLD_WIDTH/2 + 1000, WORLD_HEIGHT/2)
-        self.all_battleships.append(battleship)
+        # if self.ai_difficulty > 4:
+        #     self.number_of_ai += 1
 
         # Initialize game
         self.setup_game()
@@ -79,6 +75,10 @@ class MainScene:
     def spawn_ai_ships(self):
         """Create AI ships for single player mode"""
         if not self.connected:
+
+            battleship = BattleShip(WORLD_WIDTH / 2 + 1000, WORLD_HEIGHT / 2)
+            self.all_ships.append(battleship)
+
             for _ in range(self.number_of_ai):
                 ai_ship = Ship(
                     random.randint(0, WORLD_WIDTH),
@@ -114,8 +114,9 @@ class MainScene:
             if not ai.ship.alive:
                 self.all_ai.remove(ai)
 
-        for battleship in self.all_battleships:
-            battleship.run()
+        for ship in self.all_ships:
+            if isinstance(ship, BattleShip):
+                ship.run(dt)
 
     def check_game_state(self):
         """Check win/lose conditions"""
@@ -128,7 +129,7 @@ class MainScene:
 
     def update_player_ship(self, dt):
         """Update player ship and handle radar"""
-        self.ship.update(dt)
+        self.ship.run(dt)
         apply_inputs_to_ship(self.ship, self.inputs)
         self.handle_sounds(self.inputs)
 
@@ -168,8 +169,8 @@ class MainScene:
 
     def update_projectiles(self):
         """Update all projectiles and handle collisions"""
-        handle_bullets(self.all_bullets, self.all_ships, self.all_battleships, self.all_asteroids, self.explosion_events)
-        handle_rockets(self.all_rockets, self.all_ships, self.all_battleships, self.all_asteroids, self.explosion_events)
+        handle_bullets(self.all_bullets, self.all_ships, self.all_asteroids, self.explosion_events)
+        handle_rockets(self.all_rockets, self.all_ships, self.all_asteroids, self.explosion_events)
 
     def remove_dead_ships(self):
         """Remove ships that are no longer alive"""
@@ -214,7 +215,6 @@ class MainScene:
         """Render all game elements"""
         self.world_render.draw_stars_tiled(self.camera, self.camera.screen_width, self.camera.screen_width)
         self.world_render.draw_ships(self.all_ships, self.camera)
-        self.world_render.draw_battleships(self.all_battleships, self.camera)
         self.world_render.draw_rockets(self.all_rockets, self.camera)
         self.world_render.draw_bullets(self.all_bullets, self.camera)
         self.world_render.draw_asteroids(self.all_asteroids, self.camera)
@@ -262,7 +262,6 @@ class MainScene:
             server_owners = {ship.owner for ship in server_ships}
             server_owners.add(self.player_number)  # Keep your own ship
             self.all_ships = [ship for ship in self.all_ships if ship.owner in server_owners]
-
             self.all_rockets = message.get('rockets', self.all_rockets)
             self.all_bullets = message.get('bullets', self.all_bullets)
             self.all_asteroids = message.get('asteroids', self.all_asteroids)
@@ -336,4 +335,3 @@ class MainScene:
             self.ship.dx = ship.dx
             self.ship.dy = ship.dy
             self.server_saw_collision = False
-

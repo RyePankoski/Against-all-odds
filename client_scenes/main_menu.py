@@ -5,6 +5,7 @@ import random
 from ui_components.button import Button
 from entities.ship import Ship
 import math
+import pygame
 
 
 def update_ship_facing(ship):
@@ -31,45 +32,12 @@ class MainMenu:
         self.ship_found = False
         self.all_signatures = []
         self.buttons = []
+        self.menu_surface = pygame.Surface((self.width, self.height), pygame.SRCALPHA)
+        self.init_surface()
+        self.init_buttons()
 
         self.ai_ships = []
-        for _ in range(20):  # create 5 ships for background motion
-            x = random.randint(100, self.width - 100)
-            y = random.randint(100, self.height - 100)
-            ship = Ship(x, y, 1, None)  # owner 1, no real player
-            ship.dx = random.uniform(-2, 2)
-            ship.dy = random.uniform(-2, 2)
-            self.ai_ships.append(ship)
-
-        button_width = 700
-        button_offset = button_width / 2
-
-        single_player_button = Button(self.width / 2 - button_offset, 300, button_width, 100,
-                                      "SINGLE PLAYER | 单人游戏", self.screen, "single_player_button")
-        multiplayer_button = Button(self.width / 2 - button_offset, 450, button_width, 100,
-                                    "CREATE SERVER | 创建服务器", self.screen, "create_server_button")
-        join_server_button = Button(self.width / 2 - button_offset, 600, button_width, 100,
-                                    "JOIN SERVER | 加入服务器", self.screen, "join_server_button")
-        settings_button = Button(self.width / 2 - button_offset, 750, button_width, 100,
-                                 "SETTINGS | 设置", self.screen, "settings_button")
-        credits_button = Button(self.width / 2 - button_offset, 900, button_width, 100,
-                                "CREDITS | 制作人员", self.screen, "credits_button")
-        exit_game_button = Button(self.width / 2 - button_offset, 1050, button_width, 100,
-                                  "EXIT GAME | 退出游戏", self.screen, "exit_game_button")
-
-        self.buttons.append(single_player_button)
-        self.buttons.append(multiplayer_button)
-        self.buttons.append(join_server_button)
-        self.buttons.append(settings_button)
-        self.buttons.append(credits_button)
-        self.buttons.append(exit_game_button)
-
-        # Title text setup
-        self.title_font = pygame.font.Font("../fonts/title_font2.ttf", 100)
-        self.title_text = "AGAINST ALL ODDS"
-        self.title_surface = self.title_font.render(self.title_text, True, GREEN)
-        self.title_rect = self.title_surface.get_rect()
-        self.title_rect.center = (self.width // 2, 200)  # Center horizontally, 150px from top
+        self.init_ai()
 
         # Set state so game_manager knows to switch
         self.game_state = "menu"
@@ -107,18 +75,18 @@ class MainMenu:
                     pygame.quit()
 
     def render(self):
-
         for ship in self.ai_ships:
             if ship.ship_sprite:
                 rotated_sprite = pygame.transform.rotate(ship.ship_sprite, ship.facing_angle)
                 rect = rotated_sprite.get_rect(center=(int(ship.x), int(ship.y)))
                 self.screen.blit(rotated_sprite, rect)
             else:
-                pygame.draw.circle(self.screen, RED, (int(ship.x), int(ship.y)), 15)
-        # Draw radar screen
-        pygame.draw.circle(self.screen, GRAY, (self.width // 2, self.height // 2), self.height // 2 - 30)
-        pygame.draw.circle(self.screen, DARK_GREEN, (self.width // 2, self.height // 2), self.height // 2 - 50)
-        pygame.draw.circle(self.screen, GRAY, (self.width // 2, self.height // 2), 5)
+                pygame.draw.circle(self.menu_surface, RED, (int(ship.x), int(ship.y)), 15)
+
+        for signature in self.all_signatures:
+            pygame.draw.circle(self.menu_surface, signature[2], (signature[0], signature[1]), signature[3])
+
+        self.screen.blit(self.menu_surface, (0, 0))
 
         # Draw sweep line
         if self.current_ray < len(self.radar_rays):
@@ -131,19 +99,6 @@ class MainMenu:
             end_y = center_y + dy * line_length
 
             pygame.draw.line(self.screen, GREEN, (center_x, center_y), (end_x, end_y), 2)
-
-        # Draw signatures
-        for signature in self.all_signatures:
-            pygame.draw.circle(self.screen, signature[2], (signature[0], signature[1]), signature[3])
-
-        # Draw title
-        bg_rect = self.title_rect.copy()
-        bg_rect.inflate_ip(60, 30)
-        pygame.draw.rect(self.screen, (20, 20, 20), bg_rect, border_radius=15)  # Dark background
-        pygame.draw.rect(self.screen, GREEN, bg_rect, width=3, border_radius=15)  # Green border
-        self.screen.blit(self.title_surface, self.title_rect)
-
-
 
     def fake_radar_sweep(self):
         signatures = []
@@ -169,6 +124,7 @@ class MainMenu:
                     continue_ray = False
 
         if self.current_frame > self.radar_sweep_frames or self.current_ray >= len(self.radar_rays):
+            self.init_surface()
             self.ship_found = False
             self.current_frame = 1
             self.current_ray = 0
@@ -197,3 +153,58 @@ class MainMenu:
                 max_speed = 2
                 ship.dx = max(-max_speed, min(max_speed, ship.dx))
                 ship.dy = max(-max_speed, min(max_speed, ship.dy))
+
+    def init_surface(self):
+        self.menu_surface.fill((0, 0, 0, 0))
+
+        pygame.draw.circle(self.menu_surface, GRAY, (self.width // 2, self.height // 2), self.height // 2 - 30)
+        pygame.draw.circle(self.menu_surface, DARK_GREEN, (self.width // 2, self.height // 2), self.height // 2 - 50)
+        pygame.draw.circle(self.menu_surface, GRAY, (self.width // 2, self.height // 2), 5)
+
+        title_font = pygame.font.Font("../fonts/title_font2.ttf", 100)
+        title_text = "AGAINST ALL ODDS"
+        title_surface = title_font.render(title_text, True, GREEN)
+        title_rect = title_surface.get_rect()
+        title_rect.center = (self.width // 2, 200)
+
+        # Draw background rectangles FIRST
+        bg_rect = title_rect.copy()
+        bg_rect.inflate_ip(60, 30)
+        pygame.draw.rect(self.menu_surface, (20, 20, 20), bg_rect, border_radius=15)  # Dark background
+        pygame.draw.rect(self.menu_surface, GREEN, bg_rect, width=3, border_radius=15)  # Green border
+
+        # Then blit the text on top
+        self.menu_surface.blit(title_surface, title_rect)
+
+    def init_buttons(self):
+        button_width = 700
+        button_offset = button_width / 2
+
+        single_player_button = Button(self.width / 2 - button_offset, 300, button_width, 100,
+                                      "SINGLE PLAYER | 单人游戏", self.screen, "single_player_button")
+        multiplayer_button = Button(self.width / 2 - button_offset, 450, button_width, 100,
+                                    "CREATE SERVER | 创建服务器", self.screen, "create_server_button")
+        join_server_button = Button(self.width / 2 - button_offset, 600, button_width, 100,
+                                    "JOIN SERVER | 加入服务器", self.screen, "join_server_button")
+        settings_button = Button(self.width / 2 - button_offset, 750, button_width, 100,
+                                 "SETTINGS | 设置", self.screen, "settings_button")
+        credits_button = Button(self.width / 2 - button_offset, 900, button_width, 100,
+                                "CREDITS | 制作人员", self.screen, "credits_button")
+        exit_game_button = Button(self.width / 2 - button_offset, 1050, button_width, 100,
+                                  "EXIT GAME | 退出游戏", self.screen, "exit_game_button")
+
+        self.buttons.append(single_player_button)
+        self.buttons.append(multiplayer_button)
+        self.buttons.append(join_server_button)
+        self.buttons.append(settings_button)
+        self.buttons.append(credits_button)
+        self.buttons.append(exit_game_button)
+
+    def init_ai(self):
+        for _ in range(20):
+            x = random.randint(100, self.width - 100)
+            y = random.randint(100, self.height - 100)
+            ship = Ship(x, y, 1, None)  # owner 1, no real player
+            ship.dx = random.uniform(-2, 2)
+            ship.dy = random.uniform(-2, 2)
+            self.ai_ships.append(ship)

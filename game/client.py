@@ -76,7 +76,6 @@ class Client:
             'a': keys[pygame.K_a],
             's': keys[pygame.K_s],
             'd': keys[pygame.K_d],
-            'space': keys[pygame.K_SPACE],
             'shift': keys[pygame.K_LSHIFT] or keys[pygame.K_RSHIFT],
             'l': keys[pygame.K_l],
             'mouse_left': mouse_buttons[0],
@@ -88,6 +87,7 @@ class Client:
             '1_pressed': keys[pygame.K_1] and not prev_inputs.get('1', False),
             '2_pressed': keys[pygame.K_2] and not prev_inputs.get('2', False),
             'x_pressed': keys[pygame.K_x] and not prev_inputs.get('x', False),
+            'space_pressed': keys[pygame.K_SPACE] and not prev_inputs.get('space', False),
 
             'timestamp': time.time(),
         }
@@ -98,7 +98,8 @@ class Client:
             't': keys[pygame.K_t],
             '1': keys[pygame.K_1],
             '2': keys[pygame.K_2],
-            'x': keys[pygame.K_x]
+            'x': keys[pygame.K_x],
+            'space': keys[pygame.K_SPACE],
         }
 
         return input_package

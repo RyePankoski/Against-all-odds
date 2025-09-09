@@ -2,6 +2,7 @@ import pygame
 from game.settings import *
 import math
 import random
+from entities.battleship import BattleShip
 
 
 def generate_star_tiles():
@@ -33,6 +34,7 @@ class WorldRender:
         self.screen = screen
         self.font = pygame.font.SysFont('microsoftyahei', 20)
 
+        # Existing caches
         self.ship_panel_cache = None
         self.last_ship_data = None
         self.text_cache = {}
@@ -40,6 +42,80 @@ class WorldRender:
         screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
         self.scale_x = screen_width / CAMERA_VIEW_WIDTH
         self.scale_y = screen_height / CAMERA_VIEW_HEIGHT
+
+        # NEW: Pre-rendered shield surfaces
+        self.shield_surfaces = {}
+        self._generate_shield_surfaces()
+
+        # NEW: Radar background cache
+        self.radar_background = None
+        self.radar_signatures_surface = None
+        self.last_radar_size = None
+        self.radar_surface_dirty = True
+
+        # NEW: Reticle surface
+        self.reticle_surface = None
+        self._generate_reticle_surface()
+
+    def _generate_shield_surfaces(self):
+        """Pre-render shield surfaces at different alpha levels"""
+        shield_size = 100
+        shield_radius = 50
+
+        for alpha in range(0, 256, 15):  # Every 15 alpha levels to save memory
+            shield_surf = pygame.Surface((shield_size, shield_size), pygame.SRCALPHA)
+            color = (173, 216, 230, alpha)
+            pygame.draw.circle(shield_surf, color, (shield_radius, shield_radius), shield_radius)
+            self.shield_surfaces[alpha] = shield_surf
+
+    def _generate_reticle_surface(self):
+        """Pre-render reticle crosshair"""
+        line_length = 20
+        line_thickness = 2
+        color = (0, 255, 0)
+        surface_size = (line_length * 2 + 10, line_length * 2 + 10)
+
+        self.reticle_surface = pygame.Surface(surface_size, pygame.SRCALPHA)
+        center = (surface_size[0] // 2, surface_size[1] // 2)
+
+        # Horizontal line
+        pygame.draw.line(self.reticle_surface, color,
+                         (center[0] - line_length, center[1]),
+                         (center[0] + line_length, center[1]), line_thickness)
+
+        # Vertical line
+        pygame.draw.line(self.reticle_surface, color,
+                         (center[0], center[1] - line_length),
+                         (center[0], center[1] + line_length), line_thickness)
+
+        # Center dot
+        pygame.draw.circle(self.reticle_surface, color, center, 2)
+
+    def _generate_radar_background(self, radar_screen_size, radar_screen_position):
+        """Pre-render static radar background"""
+        surface_size = radar_screen_size * 2 + 50
+        self.radar_background = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
+
+        # Center position on the surface
+        center = (surface_size // 2, surface_size // 2)
+        radar_rim_size = radar_screen_size + 10
+
+        # Draw radar background elements
+        pygame.draw.circle(self.radar_background, WHITE, center, radar_rim_size)
+        pygame.draw.circle(self.radar_background, DARK_GREEN, center, radar_screen_size)
+        pygame.draw.circle(self.radar_background, WHITE, center, 5)
+
+        # Inner reference circle
+        pygame.draw.circle(self.radar_background, WHITE, center,
+                           (RADAR_PULSE_RANGE * radar_screen_size // RADAR_PULSE_RANGE) // 2.5, 1)
+
+        self.last_radar_size = radar_screen_size
+
+    def _prepare_radar_signatures_surface(self, radar_screen_size):
+        """Prepare surface for accumulating radar signatures"""
+        surface_size = radar_screen_size * 2 + 50
+        self.radar_signatures_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
+        self.radar_surface_dirty = False
 
     def _get_cached_text(self, text, color):
         """Cache rendered text surfaces"""
@@ -102,6 +178,13 @@ class WorldRender:
 
     def draw_ships(self, ships, camera):
         for ship in ships:
+
+            if not isinstance(ship, BattleShip):
+                if ship.is_parrying:
+                    pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y), PARRY_RANGE)
+                elif ship.can_parry:
+                    pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y), PARRY_RANGE - 10, 2)
+
             if camera.is_visible(ship.x, ship.y):
                 screen_x, screen_y = camera.world_to_screen(ship.x, ship.y)
 
@@ -110,31 +193,28 @@ class WorldRender:
                     rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
                     self.screen.blit(rotated_sprite, rotated_rect)
                 else:
-                    # Fallback
                     color = GREEN if ship.owner == 1 else RED
                     pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
 
-                shield_surface = pygame.Surface((100, 100), pygame.SRCALPHA)
+                # OPTIMIZED: Use pre-rendered shield surfaces
 
-                # Draw the circle on the alpha surface
-                pygame.draw.circle(shield_surface, (173, 216, 230, max(0, ship.shield)), (50, 50), 50 * self.scale_x)
+                if not isinstance(ship, BattleShip):
+                    if ship.shield > 0:
+                        # Find closest pre-rendered alpha level
+                        alpha = max(0, min(255, int(ship.shield)))
+                        closest_alpha = round(alpha / 15) * 15
 
-                # Blit the alpha surface to the main screen
-                self.screen.blit(shield_surface, (screen_x - 50, screen_y - 50))
+                        if closest_alpha in self.shield_surfaces:
+                            shield_surface = self.shield_surfaces[closest_alpha]
+                            scaled_size = int(50 * self.scale_x)
 
-    def draw_battleships(self, ships, camera):
-        for ship in ships:
-            if camera.is_visible(ship.x, ship.y):
-                screen_x, screen_y = camera.world_to_screen(ship.x, ship.y)
+                            # Scale if needed (cache these too if scaling becomes expensive)
+                            if scaled_size != 50:
+                                shield_surface = pygame.transform.scale(shield_surface,
+                                                                        (scaled_size * 2, scaled_size * 2))
 
-                if ship.ship_sprite:
-                    sprite = ship.ship_sprite
-                    sprite_rect = sprite.get_rect(center=(screen_x, screen_y))
-                    self.screen.blit(sprite, sprite_rect)
-                else:
-                    # Fallback
-                    color = GREEN if ship.owner == 1 else RED
-                    pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
+                            shield_rect = shield_surface.get_rect(center=(screen_x, screen_y))
+                            self.screen.blit(shield_surface, shield_rect)
 
     def draw_asteroids(self, asteroid_sectors, camera):
         if not asteroid_sectors:  # Handle empty or None dict
@@ -151,27 +231,30 @@ class WorldRender:
                 screen_x, screen_y = camera.world_to_screen(asteroid.x, asteroid.y)
 
                 if 0 <= screen_x <= WORLD_WIDTH and 0 <= screen_y <= WORLD_HEIGHT:
-                    pygame.draw.circle(self.screen, DARK_GRAY, (int(screen_x), int(screen_y)), asteroid.radius * self.scale_x)
+                    pygame.draw.circle(self.screen, DARK_GRAY,
+                                       (int(screen_x), int(screen_y)),
+                                       asteroid.radius * self.scale_x)
 
     def draw_ship_data(self, ship):
         if ship.owner != 1:
             return
 
-        # Create cache key from values that affect the display
+        # OPTIMIZED: Less sensitive cache key - round positions to reduce cache misses
         speed = math.sqrt(ship.dx ** 2 + ship.dy ** 2)
         boost_fuel_percent = int((ship.current_boost_fuel / BOOST_FUEL) * 100)
         dampening_active = hasattr(ship, 'dampening_active') and ship.dampening_active
 
         cache_key = (
-            ship.health, int(speed * 10), int(ship.x), int(ship.y),
-            boost_fuel_percent, dampening_active, int(ship.shield),
+            ship.health, int(speed * 10),
+            int(ship.x // 50) * 50, int(ship.y // 50) * 50,  # Round to nearest 50 pixels
+            boost_fuel_percent, dampening_active, int(ship.shield // 10) * 10,  # Round shield too
             ship.current_weapon, int(ship.power), ship.radar_resolution,
             ship.rocket_ammo if hasattr(ship, 'rocket_ammo') else 0,
             ship.bullet_ammo if hasattr(ship, 'bullet_ammo') else 0
         )
 
-        # Only re-render if data changed
-        if cache_key == self.last_ship_data:
+        # Only re-render if data changed significantly
+        if cache_key == self.last_ship_data and self.ship_panel_cache:
             self.screen.blit(self.ship_panel_cache, (10, 10))
             return
 
@@ -200,8 +283,8 @@ class WorldRender:
         data_lines = [
             ("SHIP STATUS | 飞船状态", green, True),  # (text, color, is_title)
             ("", green, False),
-            (f"HULL: {ship.health * 10:>3}% | 船体", red if ship.health < 2 else (yellow if ship.health < 5 else green),
-             False),
+            (f"HULL: {ship.health * 10:>3}% | 船体",
+             red if ship.health < 2 else (yellow if ship.health < 5 else green), False),
             (f"SPEED: {speed:>5.1f} | 速度", green, False),
             (f"POS X: {int(ship.x):>4} | 位置X", green, False),
             (f"POS Y: {int(ship.y):>4} | 位置Y", green, False),
@@ -246,18 +329,27 @@ class WorldRender:
         offset = 300
         radar_screen_size = offset - 50
         radar_screen_position = (width - offset, height - offset)
-        radar_rim_size = radar_screen_size + 10
 
-        # Draw radar background
-        pygame.draw.circle(self.screen, WHITE, radar_screen_position, radar_rim_size)
-        pygame.draw.circle(self.screen, DARK_GREEN, radar_screen_position, radar_screen_size)
-        pygame.draw.circle(self.screen, WHITE, radar_screen_position, 5)
+        # OPTIMIZED: Use pre-rendered radar background
+        if (self.radar_background is None or
+                self.last_radar_size != radar_screen_size):
+            self._generate_radar_background(radar_screen_size, radar_screen_position)
 
+        # Prepare signatures surface if needed
+        if self.radar_signatures_surface is None or self.radar_surface_dirty:
+            self._prepare_radar_signatures_surface(radar_screen_size)
+
+        # Calculate positions for blitting
+        surface_size = radar_screen_size * 2 + 50
+        bg_pos = (radar_screen_position[0] - surface_size // 2,
+                  radar_screen_position[1] - surface_size // 2)
+
+        # Blit pre-rendered background
+        self.screen.blit(self.radar_background, bg_pos)
+
+        # Draw dynamic elements directly (signatures, rockets, pings)
         max_radar_range = RADAR_PULSE_RANGE
         radar_scale = radar_screen_size / max_radar_range
-
-        # Inner reference circle
-        pygame.draw.circle(self.screen, WHITE, radar_screen_position, (RADAR_PULSE_RANGE * radar_scale) / 2.5, 1)
 
         # --- Signatures ---
         for sig_x, sig_y, sig_color in signatures:
@@ -287,6 +379,7 @@ class WorldRender:
             if (radar_x * radar_x + radar_y * radar_y) <= radar_screen_size * radar_screen_size:
                 pygame.draw.circle(self.screen, RED, (int(screen_x), int(screen_y)), 1)
 
+        # --- Enemy pings ---
         for angle in enemy_pings:
             dx = math.cos(angle)
             dy = math.sin(angle) * -1
@@ -298,32 +391,30 @@ class WorldRender:
 
     def draw_fps(self, clock):
         fps = f"帧率:{clock.get_fps():.1f}"
-        fps_text = self.font.render(fps, True, GREEN)
+        fps_text = self._get_cached_text(fps, GREEN)
         self.screen.blit(fps_text, (50, 500))
 
     def draw_explosions(self, explosions, camera):
+        """Fall back to direct drawing to preserve exact colors"""
         for explosion in explosions:
             if camera.is_visible(explosion[0], explosion[1]):
                 screen_x, screen_y = camera.world_to_screen(explosion[0], explosion[1])
-                pygame.draw.circle(self.screen, explosion[2], (screen_x, screen_y), explosion[3] * self.scale_x)
+                radius = explosion[3] * self.scale_x
+                pygame.draw.circle(self.screen, explosion[2], (screen_x, screen_y), int(radius))
 
     def draw_reticle(self, camera):
+        """OPTIMIZED: Use pre-rendered reticle surface"""
         mouse_x, mouse_y = pygame.mouse.get_pos()
 
-        # Simple crosshair reticle
-        line_length = 20
-        line_thickness = 2
-        color = (0, 255, 0)  # Green
+        if self.reticle_surface:
+            reticle_rect = self.reticle_surface.get_rect(center=(mouse_x, mouse_y))
+            self.screen.blit(self.reticle_surface, reticle_rect)
 
-        # Horizontal line
-        pygame.draw.line(self.screen, color,
-                         (mouse_x - line_length, mouse_y),
-                         (mouse_x + line_length, mouse_y), line_thickness)
-
-        # Vertical line
-        pygame.draw.line(self.screen, color,
-                         (mouse_x, mouse_y - line_length),
-                         (mouse_x, mouse_y + line_length), line_thickness)
-
-        # Optional: center dot
-        pygame.draw.circle(self.screen, color, (mouse_x, mouse_y), 2)
+    def clear_caches(self):
+        """Clear caches when needed (e.g., resolution change)"""
+        self.text_cache.clear()
+        self.ship_panel_cache = None
+        self.last_ship_data = None
+        self.radar_background = None
+        self.radar_signatures_surface = None
+        self.radar_surface_dirty = True

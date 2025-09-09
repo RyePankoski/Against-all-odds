@@ -3,6 +3,7 @@ from game.server import Server
 from game.client import Client
 from client_scenes.main_menu import MainMenu
 from client_scenes.lobby_scene import Lobby
+from rendering.splash_screen import SplashScreen
 
 
 class GameManager:
@@ -16,9 +17,16 @@ class GameManager:
         self.client = None
         self.main_menu = MainMenu(screen)
         self.lobby = Lobby()
-        self.game_state = "menu"
+        self.splash_screen = SplashScreen(self.screen, "../ui_art/splash.png")
+        self.game_state = "splash"
 
     def run(self, dt, events):
+        if self.game_state == "splash":
+            self.splash_screen.update(dt)
+            self.splash_screen.draw()
+            if self.splash_screen.is_done():
+                self.game_state = "menu"
+
         if self.game_state == "menu":
             self.main_menu.run(dt, events)
             if self.main_menu.game_state != "menu":

@@ -58,17 +58,24 @@ class Ship:
         self.rocket_recharge_length = 300 / 60
         self.can_reload_rocket = False
 
+        self.can_parry_timer = 0
+        self.can_parry_timer_cooldown = 180 / 60
+        self.can_parry = True
+
+        self.active_parry_timer = 0
+        self.active_parry_cooldown = 45 / 60
+        self.is_parrying = False
+
+        self.can_radar_pulse = True
+        self.can_pulse_timer = 0
+        self.can_pulse_cooldown = 150 / 60
+
         self.radar_signatures = []
         self.radar_resolution_index = 3
         self.available_radar_resolutions = [72, 360, 720, 1440, 3600]
         self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
         self.is_radar_on = True
-
         self.enemy_radar_ping_coordinates = []
-
-        self.can_radar_pulse = True
-        self.can_pulse_timer = 0
-        self.can_pulse_cooldown = 150 / 60
 
         self.alive = True
         self.dampening_active = True
@@ -101,60 +108,12 @@ class Ship:
         self.rocket_ammo = MAX_ROCKETS
         self.bullet_ammo = MAX_BULLETS
 
-    def update(self, dt):
-
+    def run(self, dt):
         if self.health <= 0:
             self.alive = False
             return
-
-        if self.shield < SHIELD_HEALTH and self.can_shield_recharge:
-            self.shield += 0.05
-
-        if self.power < SHIP_POWER:
-            self.power += 0.04
-
         self.move()
-
-        if self.can_fire_rocket is False:
-            self.fire_rocket_timer += dt
-            if self.fire_rocket_timer > self.fire_rocket_cooldown:
-                self.can_fire_rocket = True
-                self.firing_a_weapon = False
-                self.fire_rocket_timer = 0
-        if self.can_fire_bullet is False:
-            self.fire_bullet_timer += dt
-            if self.fire_bullet_timer > self.fire_bullet_cooldown:
-                self.can_fire_bullet = True
-                self.firing_a_weapon = False
-                self.fire_bullet_timer = 0
-        if self.can_shield_recharge is False:
-            self.shield_pause_timer += dt
-            if self.shield_pause_timer > self.shield_pause_length:
-                self.can_shield_recharge = True
-                self.shield_pause_timer = 0
-        if self.can_reload_rocket is False:
-            self.rocket_recharge_time += dt
-            if self.rocket_recharge_time > self.rocket_recharge_length:
-                self.can_reload_rocket = True
-                self.rocket_recharge_time = 0
-        if self.can_reload_bullet is False:
-            self.bullet_recharge_timer += dt
-            if self.bullet_recharge_timer > self.bullet_recharge_length:
-                self.can_reload_bullet = True
-                self.bullet_recharge_timer = 0
-
-        if self.can_radar_pulse is False:
-            self.can_pulse_timer += dt
-            if self.can_pulse_timer > self.can_pulse_cooldown:
-                self.can_radar_pulse = True
-                self.can_pulse_timer = 0
-
-        if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
-            self.bullet_ammo += 1
-            self.can_reload_bullet = False
-        if self.rocket_ammo < MAX_ROCKETS and self.can_reload_rocket:
-            self.rocket_ammo += 1
-            self.can_reload_rocket = False
+        self.counters(dt)
 
     def move(self):
         self.acceleration()
@@ -213,3 +172,62 @@ class Ship:
         if self.radar_resolution_index >= len(self.available_radar_resolutions):
             self.radar_resolution_index = 0
         self.radar_resolution = self.available_radar_resolutions[self.radar_resolution_index]
+
+    def counters(self, dt):
+        if self.shield < SHIELD_HEALTH and self.can_shield_recharge:
+            self.shield += 0.05
+
+        if self.power < SHIP_POWER:
+            self.power += 0.04
+
+        if self.can_fire_rocket is False:
+            self.fire_rocket_timer += dt
+            if self.fire_rocket_timer > self.fire_rocket_cooldown:
+                self.can_fire_rocket = True
+                self.firing_a_weapon = False
+                self.fire_rocket_timer = 0
+        if self.can_fire_bullet is False:
+            self.fire_bullet_timer += dt
+            if self.fire_bullet_timer > self.fire_bullet_cooldown:
+                self.can_fire_bullet = True
+                self.firing_a_weapon = False
+                self.fire_bullet_timer = 0
+        if self.can_shield_recharge is False:
+            self.shield_pause_timer += dt
+            if self.shield_pause_timer > self.shield_pause_length:
+                self.can_shield_recharge = True
+                self.shield_pause_timer = 0
+        if self.can_reload_rocket is False:
+            self.rocket_recharge_time += dt
+            if self.rocket_recharge_time > self.rocket_recharge_length:
+                self.can_reload_rocket = True
+                self.rocket_recharge_time = 0
+        if self.can_reload_bullet is False:
+            self.bullet_recharge_timer += dt
+            if self.bullet_recharge_timer > self.bullet_recharge_length:
+                self.can_reload_bullet = True
+                self.bullet_recharge_timer = 0
+        if self.can_radar_pulse is False:
+            self.can_pulse_timer += dt
+            if self.can_pulse_timer > self.can_pulse_cooldown:
+                self.can_radar_pulse = True
+                self.can_pulse_timer = 0
+
+        if self.can_parry is False:
+            self.can_parry_timer += dt
+            if self.can_parry_timer > self.can_parry_timer_cooldown:
+                self.can_parry = True
+                self.can_parry_timer = 0
+
+        if self.is_parrying is True:
+            self.active_parry_timer += dt
+            if self.active_parry_timer >= self.active_parry_cooldown:
+                self.is_parrying = False
+                self.active_parry_timer = 0
+
+        if self.bullet_ammo < MAX_BULLETS and self.can_reload_bullet:
+            self.bullet_ammo += 1
+            self.can_reload_bullet = False
+        if self.rocket_ammo < MAX_ROCKETS and self.can_reload_rocket:
+            self.rocket_ammo += 1
+            self.can_reload_rocket = False

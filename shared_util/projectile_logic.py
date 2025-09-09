@@ -2,15 +2,15 @@ import pygame.draw
 
 from game.settings import *
 from shared_util.object_handling import *
-import math
+from entities.battleship import BattleShip
 
 
-def handle_rockets(all_rockets, all_ships, all_battleships, all_asteroids, explosion_events):
+def handle_rockets(all_rockets, all_ships, all_asteroids, explosion_events):
     rockets_to_remove = []
 
     for rocket in all_rockets:
         rocket.update()
-        check_projectile_collisions(rocket, all_ships, all_battleships, all_asteroids)  # Direct call
+        check_projectile_collisions(rocket, all_ships, all_asteroids)  # Direct call
 
         if not rocket.alive:
             rockets_to_remove.append(rocket)
@@ -25,12 +25,12 @@ def handle_rockets(all_rockets, all_ships, all_battleships, all_asteroids, explo
         remove_objects(rockets_to_remove, all_rockets)
 
 
-def handle_bullets(all_bullets, all_ships, all_battleships, all_asteroids, explosion_events):
+def handle_bullets(all_bullets, all_ships, all_asteroids, explosion_events):
     bullets_to_remove = []
 
     for bullet in all_bullets:
         bullet.update()
-        check_projectile_collisions(bullet, all_ships, all_battleships, all_asteroids)  # Direct call
+        check_projectile_collisions(bullet, all_ships, all_asteroids)  # Direct call
 
         if not bullet.alive:
             explosion_events.append((bullet.x, bullet.y, PALE_BLUE, 50))
@@ -44,7 +44,7 @@ def handle_bullets(all_bullets, all_ships, all_battleships, all_asteroids, explo
         remove_objects(bullets_to_remove, all_bullets)
 
 
-def check_projectile_collisions(projectile, ships, battleships, asteroids):
+def check_projectile_collisions(projectile, ships, asteroids):
     # Damage values for different projectile types
     DAMAGE_VALUES = {
         "rocket": 40,
@@ -52,23 +52,31 @@ def check_projectile_collisions(projectile, ships, battleships, asteroids):
     }
 
     damage = DAMAGE_VALUES.get(projectile.name, 0)
-    ship_collision_radius_squared = (SHIP_HIT_BOX + COLLISION_BUFFER) ** 2
+
+    parry_collision_radius_squared = (PARRY_RANGE + COLLISION_BUFFER) ** 2
 
     # Check collisions with ships
     for ship in ships:
         if ship.owner == projectile.owner:
             continue
 
+        if isinstance(ship, BattleShip):
+            ship_collision_radius_squared = (BS_HIT_BOX + COLLISION_BUFFER) ** 2
+        else:
+            ship_collision_radius_squared = (SHIP_HIT_BOX + COLLISION_BUFFER) ** 2
+
+        if hasattr(ship, 'is_parrying'):
+            if ship.is_parrying:
+                if _check_collision(projectile, ship.x, ship.y, parry_collision_radius_squared):
+                    projectile.true_dx *= -1
+                    projectile.true_dy *= -1
+                    projectile.dx *= -1
+                    projectile.dy *= -1
+                    projectile.owner = ship.owner
+                    return
+
         if _check_collision(projectile, ship.x, ship.y, ship_collision_radius_squared):
             _apply_ship_damage(ship, damage)
-            projectile.alive = False
-            return
-
-    for battleship in battleships:
-        battleship_hit_box = 100 * 100
-
-        if _check_collision(projectile, battleship.x, battleship.y, battleship_hit_box):
-            _apply_ship_damage(battleship, damage)
             projectile.alive = False
             return
 
