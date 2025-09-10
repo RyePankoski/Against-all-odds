@@ -139,7 +139,7 @@ class MainScene:
 
         # Handle radar pulse
         if self.ship.is_radar_on:
-            if self.ship.can_radar_pulse is True:
+            if self.ship.can_radar_pulse:
                 self.radar_signatures.clear()
                 self.radar_system.begin_scan(self.ship, self.all_ships, self.all_asteroids)
                 self.ship.can_radar_pulse = False

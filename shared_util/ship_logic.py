@@ -24,6 +24,9 @@ def check_ship_collisions(ship, asteroids):
                 ship.dx *= -0.5
                 ship.dy *= -0.5
                 return True
+            else:
+                return False
+    return None
 
 
 def update_ship_facing(ship, mouse_world_pos):

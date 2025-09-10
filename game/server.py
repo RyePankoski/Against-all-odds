@@ -7,7 +7,8 @@ class Server:
     def __init__(self):
         self.sock = None
         self.state = "lobby"
-        self.connected_players = []
+        self.connected_players = {}
+
         self.player_names = []
         self.server_main_scene = ServerMainScene()
 
@@ -24,8 +25,18 @@ class Server:
         if self.state == "in_game":
             self._handle_game(dt)
 
+    def all_players_ready(self):
+        if len(self.connected_players) == 0:
+            return False
+
+        for player in self.connected_players.values():
+            if not player["ready"]:
+                return False
+        return True
+
     def _handle_game(self, dt):
         player_inputs = {}
+
         while True:
             try:
                 data, address = self.sock.recvfrom(1024)
@@ -36,7 +47,7 @@ class Server:
             except socket.error:
                 break  # No more messages this frame
 
-        game_state = self.server_main_scene.step(player_inputs, dt)  # step() instead of run()
+        game_state = self.server_main_scene.step(player_inputs, dt)
         self.send_data_to_players(game_state)
 
     def send_data_to_players(self, game_state):
@@ -45,18 +56,21 @@ class Server:
 
     def handle_lobby(self):
         self.listen_for_connections()
+        players_ready = self.all_players_ready()
+
+        if players_ready:
+            self.state = "in_game"
 
     def send_to_connected_players(self):
-        import json
         player_data = {
             'type': 'player_list',
-            'players': self.player_names,
-            'count': len(self.connected_players)
+            'players': [p["name"] for p in self.connected_players.values()],
+            'ready_states': {p["name"]: p["ready"] for p in self.connected_players.values()}
         }
         message = json.dumps(player_data).encode()
 
-        for address in self.connected_players:
-            print(f"[SERVER] Sending player list to {address}: {self.player_names}")
+        for address in self.connected_players.keys():
+            print(f"[SERVER] Sending player list to {address}")
             self.send_to_client(message, address)
 
     def listen_for_connections(self):
@@ -65,23 +79,27 @@ class Server:
             data, address = self.sock.recvfrom(1024)
             print(f"[SERVER] Got message from {address}: {data}")
 
-            import json
             try:
                 client_data = json.loads(data.decode())
                 name = client_data.get('player_name', 'Anonymous')
-                print(f"[SERVER] Player connecting: {name}")
+                ready = client_data.get('ready', False)
             except json.JSONDecodeError:
-                # Fallback for non-JSON messages
                 name = 'Anonymous'
-                print("[SERVER] Couldn't parse JSON, using Anonymous")
+                ready = False
 
-            if address not in self.connected_players:
-                self.connected_players.append(address)
-                self.player_names.append(name)
-
+            # Update or create player
+            if address in self.connected_players:
+                print(f"[SERVER] Updating player {self.connected_players[address]['name']}")
+                self.connected_players[address]['ready'] = ready
+                if name != 'Anonymous':
+                    self.connected_players[address]['name'] = name
+            else:
+                print(f"[SERVER] New player connecting: {name}")
+                self.connected_players[address] = {"name": name, "ready": ready}
                 connection_message = f"Welcome {name}!"
                 self.send_to_client(connection_message.encode(), address)
-                self.send_to_connected_players()
+
+            self.send_to_connected_players()
 
         except socket.error:
             pass

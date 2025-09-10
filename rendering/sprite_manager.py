@@ -21,15 +21,15 @@ class SpriteManager:
 
     def load_sprites(self):
         sprite_paths = {
-            'ship1': 'ship_sprites/ship1.png',
-            'ship2': 'ship_sprites/ship2.png',
-            'aiShip': 'ship_sprites/aiShip.png',
-            'aiShip2': 'ship_sprites/aiShip2.png',
-            'aiShip3': 'ship_sprites/aiShip3.png',
-            'aiShip4': 'ship_sprites/aiShip.png',
-            'rocket': 'weapon_sprites/rocket.png',
-            'bullet': 'weapon_sprites/bullet.png',
-            "battleship": 'ship_sprites/battle_ship.png',
+            'ship1': 'resources/ship_sprites/ship1.png',
+            'ship2': 'resources/ship_sprites/ship2.png',
+            'aiShip': 'resources/ship_sprites/aiShip.png',
+            'aiShip2': 'resources/ship_sprites/aiShip2.png',
+            'aiShip3': 'resources/ship_sprites/aiShip3.png',
+            'aiShip4': 'resources/ship_sprites/aiShip.png',
+            'rocket': 'resources/weapon_sprites/rocket.png',
+            'bullet': 'resources/weapon_sprites/bullet.png',
+            "battleship": 'resources/ship_sprites/battle_ship.png',
         }
 
         for name, relative_path in sprite_paths.items():

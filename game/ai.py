@@ -47,6 +47,8 @@ class AI:
         self.wander_dx = 0
         self.wander_dy = 0
 
+        self.avoiding_collision = False
+
         self.role = None
 
     def run(self, dt):
@@ -61,6 +63,7 @@ class AI:
         if not (self.detect_player(distance_squared) and self.difficulty > 0):
             self.change_wander()
             self.wander()
+            self.check_for_impending_collision()
             return
 
         # Movement behavior
@@ -80,6 +83,7 @@ class AI:
         # Combat behavior
         self.move_towards_player(distance_squared)
         self.fire_at_player(distance_squared)
+        self.check_for_impending_collision()
 
         if self.difficulty > 1:
             self.evasive_maneuver()
@@ -253,6 +257,27 @@ class AI:
             target_x = self.ship.x + self.ship.dx * look_ahead_distance
             target_y = self.ship.y + self.ship.dy * look_ahead_distance
             update_ship_facing(self.ship, (target_x, target_y))
+
+    def check_for_impending_collision(self):
+        if self.ship.sector in self.all_asteroids and self.all_asteroids[self.ship.sector]:
+            for asteroid in self.all_asteroids[self.ship.sector]:
+
+                distance_squared = (asteroid.x - self.ship.x) ** 2 + (asteroid.y - self.ship.y) ** 2
+
+                vec_x = asteroid.x - self.ship.x
+                vec_y = asteroid.y - self.ship.y
+                dot_prod = vec_x * self.ship.dx + vec_y * self.ship.dy
+
+                if dot_prod > 0 and distance_squared < (asteroid.radius * 5) ** 2:
+                    self.avoiding_collision = True
+                else:
+                    self.avoiding_collision = False
+
+    def avoid_collision(self):
+
+
+
+        pass
 
     def update_counters(self):
         if not self.can_evasive_maneuver:

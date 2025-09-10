@@ -33,13 +33,8 @@ class Button:
             border_color = (100, 100, 100)  # Light gray
             text_color = YELLOW
 
-        # Draw button with border
-        # Outer border
-        border_rect = pygame.Rect(self.rect.x - 2, self.rect.y - 2,
-                                  self.rect.width + 4, self.rect.height + 4)
+        border_rect = pygame.Rect(self.rect.x - 2, self.rect.y - 2, self.rect.width + 4, self.rect.height + 4)
         pygame.draw.rect(self.screen, border_color, border_rect, border_radius=8)
-
-        # Main button background
         pygame.draw.rect(self.screen, bg_color, self.rect, border_radius=5)
 
         # Re-render text with current color if needed

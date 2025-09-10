@@ -4,9 +4,9 @@ import pygame
 class SoundManager:
     def __init__(self):
         self.sounds = {
-            'bullet': pygame.mixer.Sound("../sounds/gunfire.mp3"),
-            'starting_shot': pygame.mixer.Sound("../sounds/starting_shot.mp3"),
-            'rocket': pygame.mixer.Sound("../sounds/rocket.mp3")
+            'bullet': pygame.mixer.Sound("../resources/sounds/gunfire.mp3"),
+            'starting_shot': pygame.mixer.Sound("../resources/sounds/starting_shot.mp3"),
+            'rocket': pygame.mixer.Sound("../resources/sounds/rocket.mp3")
         }
         self.gunfire_channel = None
         self.rocket_channel = None

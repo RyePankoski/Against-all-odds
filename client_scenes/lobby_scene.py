@@ -16,17 +16,15 @@ class Lobby:
         self.init_components()
         self.max_players = 10
         self.ship_sprite = SpriteManager.get_sprite("ship1")
+        self.player_ready = False
 
     def set_players(self, players):
         self.players = players
 
-    def run(self):
-
-        for button in self.buttons:
-            if button.button_id == "ready_up_button":
-                pass
-
+    def run(self, events):
         self.render()
+        self.handle_buttons(events)
+
 
     def render(self):
         # Title
@@ -66,8 +64,23 @@ class Lobby:
                 pygame.draw.circle(self.screen, RED,
                                    (int(list_x + list_width - 20), int(y_pos + 20)), 5)
 
+    def handle_buttons(self, events):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_clicked = False
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_clicked = True
+
+        for button in self.buttons:
+            button.render()
+            clicked = button.update(mouse_pos, mouse_clicked)
+
+            if clicked:
+                if button.button_id == "ready_up_button":
+                    self.player_ready = True
+
+
     def init_components(self):
-        ready_up_button = Button(self.width, 100, 200, 100, "READY", self.screen, "ready_up_button")
+        ready_up_button = Button(self.width - 200, 200, 200, 100, "READY", self.screen, "ready_up_button")
         self.buttons.append(ready_up_button)
-
-

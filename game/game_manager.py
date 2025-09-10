@@ -18,7 +18,7 @@ class GameManager:
 
         self.server = None
         self.main_menu = MainMenu(screen)
-        self.splash_screen = SplashScreen(self.screen, "../ui_art/splash.png")
+        self.splash_screen = SplashScreen(self.screen, "../resources/ui_art/splash.png")
         self.game_state = "splash"
 
         # Client-side components (created as needed)
@@ -33,6 +33,7 @@ class GameManager:
         self.server_address = None
         self.waiting_for_server = False
         self.connection_attempt_time = None
+        self.server_ip_address = None
 
         # Input tracking
         self.prev_inputs = None
@@ -63,7 +64,9 @@ class GameManager:
                 self.game_state = "lobby"
 
         elif self.game_state == "lobby":
-            self._run_lobby()
+            self._run_lobby(events)
+        elif self.game_state == "in_game":
+            self._run_multiplayer(events)
 
         if self.server:
             self.server.run(dt)
@@ -128,19 +131,29 @@ class GameManager:
     def _run_joining(self, dt, events):
         self.join_window.run(dt, events)
 
+        if self.join_window.number:
+            self.server_ip = self.join_window.number
+
         if self.join_window.number and self.join_window.name and not self.waiting_for_server:
-            self.connect(self.join_window.number, self.join_window.name)
+            self.connect(self.join_window.number, False, self.join_window.name)
 
         # Check for server response
         if self.waiting_for_server:
             return self.check_for_server_response()
         return None
 
-    def _run_lobby(self):
-        ready = self.lobby.run()
+    def _run_lobby(self, events):
+        self.lobby.run(events)
+        if self.lobby.player_ready:
+            self.send_ready()
+            if self.server.state == "in_game":
+                self.game_state = "in_game"
         self.listen_for_server_updates()
 
-    def connect(self, server_ip, player_name="Anonymous"):
+    def send_ready(self):
+        self.sock.sendto(json.dumps({"ready": True}).encode(), self.server_address)
+
+    def connect(self, server_ip, ready, player_name="Anonymous"):
         self.server_address = (server_ip, 4242)
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -148,8 +161,10 @@ class GameManager:
         import json
         connection_data = {
             'type': 'connect',
-            'player_name': player_name
+            'player_name': player_name,
+            'ready': ready,
         }
+
         message = json.dumps(connection_data).encode()
         self.sock.sendto(message, self.server_address)
 
