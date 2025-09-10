@@ -1,4 +1,6 @@
 import socket
+from server_scenes.server_main_scene import ServerMainScene
+import json
 
 
 class Server:
@@ -7,19 +9,39 @@ class Server:
         self.state = "lobby"
         self.connected_players = []
         self.player_names = []
+        self.server_main_scene = ServerMainScene()
 
     def start(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind(('localhost', 4242))
-
         print("Socket created!")
         print(f"Socket type: {self.sock.type}")
         print(f"Socket family: {self.sock.family}")
 
     def run(self, dt):
-        print(f"{self.connected_players}")
         if self.state == "lobby":
             self.handle_lobby()
+        if self.state == "in_game":
+            self._handle_game(dt)
+
+    def _handle_game(self, dt):
+        player_inputs = {}
+        while True:
+            try:
+                data, address = self.sock.recvfrom(1024)
+                message = json.loads(data.decode())
+                player_id = message.get('player_id')
+                input_data = message.get('input_data')
+                player_inputs[player_id] = input_data
+            except socket.error:
+                break  # No more messages this frame
+
+        game_state = self.server_main_scene.step(player_inputs, dt)  # step() instead of run()
+        self.send_data_to_players(game_state)
+
+    def send_data_to_players(self, game_state):
+        for address in self.connected_players:
+            self.sock.sendto(json.dumps(game_state).encode(), address)
 
     def handle_lobby(self):
         self.listen_for_connections()
@@ -41,7 +63,7 @@ class Server:
         try:
             self.sock.settimeout(0)
             data, address = self.sock.recvfrom(1024)
-            print(f"Got message from {address}: {data}")
+            print(f"[SERVER] Got message from {address}: {data}")
 
             import json
             try:
@@ -55,7 +77,7 @@ class Server:
 
             if address not in self.connected_players:
                 self.connected_players.append(address)
-                self.player_names.append(name)  # Make sure you have this list in __init__
+                self.player_names.append(name)
 
                 connection_message = f"Welcome {name}!"
                 self.send_to_client(connection_message.encode(), address)

@@ -7,8 +7,7 @@ from entities.ships.battleship import BattleShip
 
 
 class ServerMainScene:
-    def __init__(self, fake_net):
-        self.fake_network = fake_net
+    def __init__(self):
         self.all_ships = []
         self.all_projectiles = []
         self.explosion_events = []
@@ -18,13 +17,11 @@ class ServerMainScene:
         # Create ships
         ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)
         ship2 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, None)
-
         battleship = BattleShip(WORLD_WIDTH / 2 + 100, WORLD_HEIGHT / 2 + 100)
-
         self.all_ships = [ship1, ship2, battleship]
 
-    def run(self, dt):
-        input_messages = self.fake_network.get_server_messages()
+    def step(self, dt, input_messages):
+
         for message in input_messages:
             player_id = message.get('player_id')
             input_data = message.get('input_data')
@@ -75,4 +72,4 @@ class ServerMainScene:
             'collision_events': collision_events
         }
         self.explosion_events.clear()
-        self.fake_network.send_to_client(game_state)
+        return game_state

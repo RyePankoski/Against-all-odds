@@ -13,13 +13,13 @@ from entities.ships.battleship import BattleShip
 
 
 class MainScene:
-    def __init__(self, screen, clock, state, player_number):
+    def __init__(self, screen, clock, connected, player_number):
         self.ship = None
         self.screen = screen
         self.clock = clock
-        self.state = state
-        self.connected = True if self.state == "connected" else False
+        self.connected = connected
         self.player_number = player_number
+
 
         # Game state
         self.victory = False
@@ -236,15 +236,6 @@ class MainScene:
         """Receive input data from client"""
         self.inputs = inputs
 
-    def handle_sounds(self, inputs):
-        if inputs.get('mouse_left'):
-            if self.ship and self.ship.current_weapon == "bullet":
-                self.sound.start_gunfire()
-            if self.ship and self.ship.current_weapon == "rocket":
-                self.sound.play_rocket_sound()
-        else:
-            self.sound.stop_gunfire_with_fade()
-
     def inject_server_data(self, server_messages, dt):
         """Handle multiplayer server data"""
         for message in server_messages:
@@ -339,3 +330,12 @@ class MainScene:
             self.ship.dx = ship.dx
             self.ship.dy = ship.dy
             self.server_saw_collision = False
+
+    def handle_sounds(self, inputs):
+        if inputs.get('mouse_left'):
+            if self.ship and self.ship.current_weapon == "bullet":
+                self.sound.start_gunfire()
+            if self.ship and self.ship.current_weapon == "rocket":
+                self.sound.play_rocket_sound()
+        else:
+            self.sound.stop_gunfire_with_fade()

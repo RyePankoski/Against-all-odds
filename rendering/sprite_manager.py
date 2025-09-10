@@ -38,7 +38,6 @@ class SpriteManager:
                 if full_path.exists():
                     sprite = pygame.image.load(str(full_path)).convert_alpha()
                     self.sprites[name] = sprite
-                    print(f"Loaded sprite: {name}")
                 else:
                     print(f"Sprite file not found: {full_path}")
                     self.sprites[name] = None

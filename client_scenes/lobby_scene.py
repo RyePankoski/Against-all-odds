@@ -1,6 +1,7 @@
 import pygame
 from rendering.sprite_manager import SpriteManager
 from game.settings import *
+from ui_components.button import Button
 
 
 class Lobby:
@@ -20,6 +21,11 @@ class Lobby:
         self.players = players
 
     def run(self):
+
+        for button in self.buttons:
+            if button.button_id == "ready_up_button":
+                pass
+
         self.render()
 
     def render(self):
@@ -61,4 +67,7 @@ class Lobby:
                                    (int(list_x + list_width - 20), int(y_pos + 20)), 5)
 
     def init_components(self):
-        pass
+        ready_up_button = Button(self.width, 100, 200, 100, "READY", self.screen, "ready_up_button")
+        self.buttons.append(ready_up_button)
+
+

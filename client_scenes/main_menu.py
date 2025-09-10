@@ -134,7 +134,6 @@ class MainMenu:
         self.all_signatures.extend(signatures)
 
     def update_ai_ships(self, dt):
-
         ship_speed = 80
         for ship in self.ai_ships:
             update_ship_facing(ship)
