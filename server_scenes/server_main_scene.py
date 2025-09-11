@@ -19,9 +19,15 @@ class ServerMainScene:
             self.create_player_ships()
 
     def create_player_ships(self):
-        player_addresses = list(self.connected_players.keys())
-        for i, address in enumerate(player_addresses):
-            ship = Ship(random.randint(0, WORLD_WIDTH), random.randint(0, WORLD_HEIGHT), address, None)
+        for address in self.connected_players:  # address is the key
+            player_info = self.connected_players[address]
+            ship = Ship(
+                random.randint(0, WORLD_WIDTH),
+                random.randint(0, WORLD_HEIGHT),
+                address,  # unique ID / address
+                None
+            )
+            ship.owner_name = player_info['player_name']  # get the name from the dict
             self.all_ships.append(ship)
 
     def step(self, input_messages, dt):

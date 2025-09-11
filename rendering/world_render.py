@@ -38,6 +38,7 @@ class WorldRender:
         # Existing caches
         self.ship_panel_cache = None
         self.last_ship_data = None
+        self.player_placard = None
         self.text_cache = {}
 
         screen_width, screen_height = pygame.display.get_desktop_sizes()[0]
@@ -128,7 +129,7 @@ class WorldRender:
     def draw_stars_tiled(self, camera, width, height):
         camera_x, camera_y = camera.x, camera.y
 
-        padding = TILE_SIZE * 3
+        padding = TILE_SIZE
         screen_left = camera_x - width // 2 - padding
         screen_right = camera_x + width // 2 + padding
         screen_top = camera_y - height // 2 - padding
@@ -234,21 +235,20 @@ class WorldRender:
                     self._draw_shield(screen_x, screen_y, ship.shield)
 
     def _draw_ships_multiplayer(self, ships, camera):
-        """Optimized for dict ship data from network"""
+        """Optimized for dict ship data from network, with owner names drawn."""
         for ship in ships:
             x, y = ship['x'], ship['y']
             facing_angle = ship['angle']
             ship_type = ship.get('type', 'ship')
             owner = ship.get('owner')
             shield = ship.get('shield', 0)
-
-            # No parry effects in multiplayer (not sent over network)
+            owner_name = ship.get('n', None)  # Get the name from the dict
 
             if camera.is_visible(x, y):
                 screen_x, screen_y = camera.world_to_screen(x, y)
 
+                # Draw the ship sprite
                 sprite = self._get_ship_sprite(ship_type, owner)
-
                 if sprite:
                     rotated_sprite = pygame.transform.rotate(sprite, facing_angle)
                     rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
@@ -256,9 +256,16 @@ class WorldRender:
                 else:
                     self._draw_ship_fallback(screen_x, screen_y, ship_type, owner)
 
-                # Shield effects
+                # Draw shield if applicable
                 if ship_type != 'battleship' and shield > 0:
                     self._draw_shield(screen_x, screen_y, shield)
+
+                # Draw owner name above ship
+                if owner_name:
+                    # Render white text, no background
+                    name_surface = self.font.render(str(owner_name), True, WHITE)
+                    name_rect = name_surface.get_rect(center=(screen_x, screen_y - 20))  # 20px above ship
+                    self.screen.blit(name_surface, name_rect)
 
     def _get_ship_sprite(self, ship_type, owner):
         """Get appropriate sprite for ship type and owner"""
@@ -428,7 +435,6 @@ class WorldRender:
         if self.radar_signatures_surface is None or self.radar_surface_dirty:
             self._prepare_radar_signatures_surface(radar_screen_size)
 
-        # Calculate positions for blitting
         surface_size = radar_screen_size * 2 + 50
         bg_pos = (radar_screen_position[0] - surface_size // 2,
                   radar_screen_position[1] - surface_size // 2)
@@ -456,6 +462,7 @@ class WorldRender:
 
         # --- Rockets ---
         for projectile in projectiles:
+
             if isinstance(projectile, Rocket):
                 relative_x = projectile.x - ship_pos[0]
                 relative_y = projectile.y - ship_pos[1]

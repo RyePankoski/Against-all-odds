@@ -10,7 +10,6 @@ from client_scenes.defeat_screen import DefeatScreen
 from rendering.world_render import WorldRender
 from rendering.sound_manager import SoundManager
 from entities.ships.battleship import BattleShip
-import gzip
 
 
 class MainScene:
@@ -54,6 +53,9 @@ class MainScene:
         self.defeat_screen = DefeatScreen(self.screen)
         self.world_render = WorldRender(self.screen)
 
+        self.chosen_spectate = False
+        self.spectate_ship_address = None
+
         # AI configuration
         self.number_of_ai = 1
         self.ai_difficulty = 5
@@ -68,7 +70,7 @@ class MainScene:
     def setup_game(self):
         """Initialize the game world and entities"""
         # Create player ship
-        self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number, self.camera)
+        self.ship = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, self.player_number,  self.camera)
         self.all_ships.append(self.ship)
 
         if not self.connected:
@@ -101,12 +103,15 @@ class MainScene:
         self.frame += 1
         self.check_game_state()
 
-        if self.ship:
+        if self.ship and not self.defeat:
             self.update_player_ship(dt)
 
-        if not self.connected:
+        if not self.connected and not self.defeat:
             self.update_game_objects()
             self.update_ai(dt)
+
+        if self.defeat and self.chosen_spectate:
+            self.update_spectate_target()
 
         self.render()
         self.handle_victory_screen()
@@ -197,10 +202,21 @@ class MainScene:
 
     def handle_defeat_screen(self):
         if self.defeat:
-            self.defeat_screen.run()
-            if self.defeat_screen.state_to_extract == "new_game":
-                self.defeat_screen.state_to_extract = "stay"
-                self.reset_game()
+            if not self.connected:
+                self.defeat_screen.run()
+                if self.defeat_screen.state_to_extract == "new_game":
+                    self.defeat_screen.state_to_extract = "stay"
+                    self.reset_game()
+            else:
+                # Spectate mode for single player
+                if not self.chosen_spectate and self.all_ships:
+                    # Pick a random ship to follow that isn't the player's dead ship
+                    live_ships = [s for s in self.all_ships if s.alive]
+                    if live_ships:
+                        self.spectate_ship_address = random.choice(live_ships).owner
+                        self.chosen_spectate = True
+                # Disable inputs
+                self.inputs.clear()
 
     def reset_game(self):
         """Reset game state for new game"""
@@ -227,12 +243,30 @@ class MainScene:
         self.world_render.draw_explosions(self.explosion_events, self.camera)
         self.explosion_events.clear()
 
-        if self.ship:
+        if self.ship and not self.defeat:
             self.camera.follow_target(self.ship.x, self.ship.y)
             self.world_render.draw_ship_data(self.ship)
             self.world_render.draw_radar_screen(self.radar_signatures, self.ship.enemy_radar_ping_coordinates,
                                                 (self.all_ships[0].x, self.all_ships[0].y), self.all_projectiles)
+        elif self.chosen_spectate and self.spectate_ship_address is not None:
+            spectate_ship = next((s for s in self.all_ships if s.owner == self.spectate_ship_address), None)
+            if spectate_ship:
+                self.camera.follow_target(spectate_ship.x, spectate_ship.y)
+
         self.world_render.draw_fps(self.clock)
+
+    def update_spectate_target(self):
+        if self.chosen_spectate:
+            spectate_ship = next((s for s in self.all_ships if s.owner == self.spectate_ship_address and s.alive), None)
+            if spectate_ship is None:
+                # Spectated ship is dead or removed, pick a new live ship
+                live_ships = [s for s in self.all_ships if s.alive and s.owner != self.player_number]
+                if live_ships:
+                    self.spectate_ship_address = random.choice(live_ships).owner
+                else:
+                    # No live ships left, optional: stop spectating
+                    self.chosen_spectate = False
+                    self.spectate_ship_address = None
 
     def inject_inputs(self, inputs):
         """Receive input data from client"""
@@ -262,6 +296,7 @@ class MainScene:
                 server_ship.health = server_ship_data.get('h', 100)  # Changed 'health' to 'h'
                 server_ship.shield = server_ship_data.get('s', 100)  # Changed 'shield' to 's'
                 server_ship.facing_angle = server_ship_data.get('a', 0)  # Changed 'angle' to 'a'
+                server_ship.owner_name = server_ship_data.get('n', None)
 
             ship_owner = server_ship.owner if hasattr(server_ship, 'owner') else server_ship_data[
                 'o']  # Changed 'owner' to 'o'

@@ -13,8 +13,14 @@ FPS = 60
 
 def main():
     running = True
+    frame_count = 0
 
     while running:
+        frame_count += 1
+
+        if frame_count > 600:
+            pygame.quit()
+
         screen.fill((0, 0, 0))
         dt = clock.tick(FPS) / 1000
         events = pygame.event.get()
@@ -39,4 +45,4 @@ if __name__ == "__main__":
         pr.disable()
         stats = pstats.Stats(pr)
         stats.sort_stats('tottime')
-        # stats.print_stats(20)
+        stats.print_stats(20)

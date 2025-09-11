@@ -9,6 +9,7 @@ class Ship:
         self.x = float(x)
         self.y = float(y)
         self.owner = owner
+        self.owner_name = None
         self.camera = camera
 
         # Ship movement parameters
@@ -235,6 +236,7 @@ class Ship:
             'y': int(round(self.y)),
             'a': int(round(self.facing_angle)),
             'tp': self.__class__.__name__.lower(),
+            'n' : self.owner_name
         }
 
         # Only include non-zero values

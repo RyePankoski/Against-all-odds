@@ -183,7 +183,7 @@ class Server:
             'a': {f"{sector[0]},{sector[1]}": ast_list for sector, ast_list in nearby_asteroids.items()},
             'e': game_state['explosions'],
             'ts': game_state['timestamp'],
-            'c': game_state['collision_events']
+            'c': game_state['collision_events'],
         }
 
         self.round_coordinates(state_to_send)
@@ -191,16 +191,15 @@ class Server:
         message = json.dumps(state_to_send)
         compressed_message = gzip.compress(message.encode())
 
-        size = len(compressed_message)
-
-        self.number_of_messages += 1
-        if self.number_of_messages == 1:
-            self.running_average = size
-        else:
-            self.running_average = ((self.running_average * (
-                    self.number_of_messages - 1)) + size) / self.number_of_messages
-
-        print(f"[SERVER] Running average: {self.running_average:.1f} bytes")
+        # size = len(compressed_message)
+        # self.number_of_messages += 1
+        # if self.number_of_messages == 1:
+        #     self.running_average = size
+        # else:
+        #     self.running_average = ((self.running_average * (
+        #             self.number_of_messages - 1)) + size) / self.number_of_messages
+        #
+        # # print(f"[SERVER] Running average: {self.running_average:.1f} bytes")
 
         for address in self.connected_players:
             self.network_layer.send_to(compressed_message, address)
@@ -219,6 +218,3 @@ class Server:
         elif isinstance(obj, list):
             for item in obj:
                 self.round_coordinates(item)
-
-
-
