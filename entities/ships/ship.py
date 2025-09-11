@@ -228,3 +228,17 @@ class Ship:
         if self.rocket_ammo < MAX_ROCKETS and self.can_reload_rocket:
             self.rocket_ammo += 1
             self.can_reload_rocket = False
+
+    def to_dict(self):
+        return {
+            'x': self.x,
+            'y': self.y,
+            'dx' : self.dx,
+            'dy' : self.dy,
+            'shield' : self.shield,
+            'health': self.health,
+            'angle': self.facing_angle,
+            'alive': self.alive,
+            'owner': str(self.owner) if self.owner else None,
+            'sector' : self.sector,
+        }

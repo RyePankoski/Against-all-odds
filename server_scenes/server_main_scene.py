@@ -1,3 +1,4 @@
+import random
 import time
 from entities.ships.ship import Ship
 from shared_util.ship_logic import *
@@ -7,32 +8,39 @@ from entities.ships.battleship import BattleShip
 
 
 class ServerMainScene:
-    def __init__(self):
+    def __init__(self, connected_players=None):
+        self.connected_players = connected_players
         self.all_ships = []
         self.all_projectiles = []
         self.explosion_events = []
         self.all_asteroids = generate_some_asteroids(MAX_ASTEROIDS)
         self.current_asteroids = MAX_ASTEROIDS
 
-        # Create ships
-        ship1 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 1, None)
-        ship2 = Ship(WORLD_WIDTH / 2, WORLD_HEIGHT / 2, 2, None)
         battleship = BattleShip(WORLD_WIDTH / 2 + 100, WORLD_HEIGHT / 2 + 100)
-        self.all_ships = [ship1, ship2, battleship]
+        self.all_ships.append(battleship)
+
+        if self.connected_players:
+            self.create_player_ships()
+
+    def create_player_ships(self):
+        player_addresses = list(self.connected_players.keys())
+        for i, address in enumerate(player_addresses):
+            ship = Ship(random.randint(0, WORLD_WIDTH), random.randint(0, WORLD_HEIGHT), address, None)
+            self.all_ships.append(ship)
 
     def step(self, input_messages, dt):
+        collision_events = []
 
+        # Apply inputs to ships
         for message in input_messages:
-            player_id = message.get('player_id')
+            player_id = message.get('player_id')  # This is the network address
             input_data = message.get('input_data')
 
             # Find player's ship and apply inputs
             for ship in self.all_ships:
-                if ship.owner == player_id:
+                if ship.owner == player_id:  # Match network address
                     apply_inputs_to_ship(ship, input_data)
                     break
-
-        collision_events = []
 
         # Update all ships
         for ship in self.all_ships:
@@ -64,7 +72,7 @@ class ServerMainScene:
 
         # Send state to clients
         game_state = {
-            'all_projectiles': self.all_projectiles,
+            'projectiles': self.all_projectiles,
             'ships': self.all_ships.copy(),
             'asteroids': self.all_asteroids,
             'explosions': self.explosion_events.copy(),

@@ -24,3 +24,14 @@ class Asteroid:
             self.alive = False
 
         self.sector = int(self.x // SECTOR_SIZE), int(self.y // SECTOR_SIZE)
+
+    def to_dict(self):
+        return {
+            'x': self.x,
+            'y': self.y,
+            'dx': self.dx,
+            'dy': self.dy,
+            'health': self.health,
+            'alive': self.alive,
+            'sector': list(self.sector),  # Convert tuple to list
+        }

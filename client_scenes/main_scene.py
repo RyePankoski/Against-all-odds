@@ -13,12 +13,16 @@ from entities.ships.battleship import BattleShip
 
 
 class MainScene:
-    def __init__(self, screen, clock, connected):
+    def __init__(self, screen, clock, connected, player_id=None):
         self.ship = None
         self.screen = screen
         self.clock = clock
         self.connected = connected
-        self.player_number = random.randint(0, 1000)
+
+        if self.connected:
+            self.player_number = player_id
+        else:
+            self.player_number = random.randint(0, 10)
 
         # Game state
         self.victory = False
@@ -151,7 +155,6 @@ class MainScene:
     def update_game_objects(self):
         """Update all game objects and handle collisions"""
         # Handle collisions and physics
-
         asteroid_diff = handle_asteroids(self.all_asteroids)
         self.current_asteroids -= asteroid_diff
 
@@ -235,7 +238,7 @@ class MainScene:
         if isinstance(inputs, dict) and "type" in inputs:
             if inputs["type"] == "PLAYER_INPUT":
                 print("got inputs")
-                self.inputs = inputs["data"]
+                self.inputs = inputs["input_data"]  # Changed from "data" to "input_data"
             else:
                 return
         else:
@@ -244,13 +247,12 @@ class MainScene:
     def inject_server_data(self, server_messages, dt):
         """Handle multiplayer server data"""
         for message in server_messages:
-
             # We need to remove our ship from the server update, so we can use the lerp.
             server_ships = message.get('ships', [])
 
             # Update/add ships from server
             for server_ship in server_ships:
-                if server_ship.owner != self.player_number:
+                if server_ship.owner != self.player_number:  # Compare addresses
                     for i, local_ship in enumerate(self.all_ships):
                         if local_ship.owner == server_ship.owner:
                             self.all_ships[i] = server_ship
@@ -258,28 +260,37 @@ class MainScene:
                     else:
                         self.all_ships.append(server_ship)
 
-            # Remove ships that are no longer on the server
             server_owners = {ship.owner for ship in server_ships}
             server_owners.add(self.player_number)  # Keep your own ship
             self.all_ships = [ship for ship in self.all_ships if ship.owner in server_owners]
+
             self.all_projectiles = message.get('all_projectiles', self.all_projectiles)
-            self.all_asteroids = message.get('asteroids', self.all_asteroids)
+
+            if 'asteroids' in message:
+                asteroids = {}
+                for sector_str, asteroid_list in message['asteroids'].items():
+                    x, y = map(int, sector_str.split(','))
+                    sector_key = (x, y)
+                    asteroids[sector_key] = asteroid_list
+                message['asteroids'] = asteroids
+
             self.explosion_events.extend(message.get('explosions', []))
 
-            # We need to check for collision events, so we can start listening to the server again.
             collision_events = message.get('collision_events', [])
             for collision_event in collision_events:
-                if collision_event['player_id'] == self.ship.owner:
+                if collision_event['player_id'] == self.player_number:  # Compare with our player_id
                     print("Server saw a collision")
                     self.server_saw_collision = True
                     break
 
+            # Update our ship's health/shield from server
             ships = message.get('ships', [])
             for ship in ships:
-                if ship.owner == self.player_number:
-                    self.ship.shield = ship.shield
-                    self.ship.health = ship.health
-                    self.interpolate(ship, dt)
+                if ship.owner == self.player_number:  # Find our ship
+                    if self.ship:  # Make sure we have a ship
+                        self.ship.shield = ship.shield
+                        self.ship.health = ship.health
+                        self.interpolate(ship, dt)
                     break
 
     def interpolate(self, ship, dt):

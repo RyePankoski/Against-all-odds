@@ -26,6 +26,5 @@ class JoinLobbyWindow:
                 try:
                     self.number = self.ip_box.text
                     self.name = self.name_box.text
-                    print(f"got number: {self.number}, name: {self.name}")
                 except ValueError:
                     print("Invalid input, not a number")

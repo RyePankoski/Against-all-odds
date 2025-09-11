@@ -1,3 +1,5 @@
+import json
+
 from rendering.sprite_manager import SpriteManager
 from ui_components.button import Button
 from game.settings import *
@@ -6,9 +8,11 @@ import pygame
 
 
 class Lobby:
-    def __init__(self, screen, network_layer):
+    def __init__(self, screen, network_layer, server_ip):
         self.screen = screen
         self.network_layer = network_layer
+        self.server_address = server_ip
+
         self.max_players = 10
         self.player_ready = False
 
@@ -19,8 +23,10 @@ class Lobby:
 
         self.input_boxes = []
         self.buttons = []
-        self.players = []
+        self.players = {}
         self.init_components()
+
+        self.start_game = False
 
     def set_players(self, players):
         self.players = players
@@ -28,6 +34,60 @@ class Lobby:
     def run(self, events):
         self.render()
         self.handle_buttons(events)
+        self.listen_for_player_statuses()
+        self.listen_for_start_game()
+
+    def handle_buttons(self, events):
+        mouse_pos = pygame.mouse.get_pos()
+        mouse_clicked = False
+
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                mouse_clicked = True
+
+        for button in self.buttons:
+            button.render()
+            clicked = button.update(mouse_pos, mouse_clicked)
+
+            if clicked:
+                if button.button_id == "ready_up_button":
+                    self.player_ready = not self.player_ready  # Toggle ready status
+                    self.inform_server_ready()
+
+    def inform_server_ready(self):
+        if self.player_ready:
+            message = {
+                "type": "READY",
+                "status": self.player_ready,
+            }
+            message = json.dumps(message).encode()
+            print("[LOBBY] Player readied, sending to server]")
+            self.network_layer.send_to(message, self.server_address)
+
+    def listen_for_player_statuses(self):
+        message = self.network_layer.listen_for_messages()
+        if message is not None:
+            data, address = message
+            try:
+                data = json.loads(data.decode())
+                if data["type"] == "PLAYERS_STATUS":
+                    self.players = data["players"]
+            except json.JSONDecodeError:
+                print("[CLIENT] Invalid message format, discarding.")
+
+    def listen_for_start_game(self):
+        message = self.network_layer.listen_for_messages()
+        if message is not None:
+            data, address = message
+            try:
+                data = json.loads(data.decode())
+                if data["type"] == "START_GAME":
+                    print("[CLIENT] Servers says to begin.")
+                    if data["?"]:
+                        self.start_game = True
+            except json.JSONDecodeError:
+                print("[CLIENT] Invalid message format, discarding.")
+
 
     def render(self):
         # Title
@@ -40,7 +100,6 @@ class Lobby:
         count_rect = count_text.get_rect(center=(self.width / 2, 140))
         self.screen.blit(count_text, count_rect)
 
-        # Players list with a simple border
         if self.players:
             list_y = 200
             list_width = 300
@@ -60,32 +119,19 @@ class Lobby:
                 self.screen.blit(self.ship_sprite, (list_x, y_pos))
 
                 # Player name
-                text_surf = self.font.render(player, True, (255, 255, 255))
+                text_surf = self.font.render(player['name'], True, (255, 255, 255))
                 self.screen.blit(text_surf, (list_x + 60, y_pos + 10))
 
-                # Ready indicator
-                pygame.draw.circle(self.screen, RED,
+                # Ready indicator - green if ready, red if not
+                color = GREEN if player['ready'] else RED
+                pygame.draw.circle(self.screen, color,
                                    (int(list_x + list_width - 20), int(y_pos + 20)), 5)
-
-    def handle_buttons(self, events):
-        mouse_pos = pygame.mouse.get_pos()
-        mouse_clicked = False
-
-        for event in events:
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                mouse_clicked = True
-
-        for button in self.buttons:
-            button.render()
-            clicked = button.update(mouse_pos, mouse_clicked)
-
-            if clicked:
-                if button.button_id == "ready_up_button":
-                    self.player_ready = True
+        else:
+            # Show "No players connected" message
+            no_players_text = self.font.render("No players connected", True, (150, 150, 150))
+            no_players_rect = no_players_text.get_rect(center=(self.width / 2, 250))
+            self.screen.blit(no_players_text, no_players_rect)
 
     def init_components(self):
         ready_up_button = Button(self.width - 200, 200, 200, 100, "READY", self.screen, "ready_up_button")
         self.buttons.append(ready_up_button)
-
-    def add_player(self, player):
-        self.players.append(player)

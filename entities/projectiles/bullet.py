@@ -46,3 +46,18 @@ class Bullet(Projectile):
         self.x += self.dx + (self.true_dx * self.velocity)
         self.y += self.dy + (self.true_dy * self.velocity)
         self.sector = self.x // SECTOR_SIZE, self.y // SECTOR_SIZE
+
+    def to_dict(self):
+        return {
+            'x': self.x,
+            'y': self.y,
+            'prev_x': self.prev_x,
+            'prev_y': self.prev_y,
+            'dx': self.dx,
+            'dy': self.dy,
+            'true_dx': self.true_dx,
+            'true_dy': self.true_dy,
+            'alive': self.alive,
+            'owner': str(self.owner) if self.owner else None,
+            'sector' : self.sector,
+        }

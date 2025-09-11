@@ -7,11 +7,12 @@ import time
 
 
 class Client:
-    def __init__(self, screen, clock, connected, network_layer, server_ip_port):
+    def __init__(self, screen, clock, connected, network_layer, server_address, client_address):
         self.prev_inputs = None
         self.connected = connected
         self.network_layer = network_layer
-        self.main_scene = MainScene(screen, clock, connected)
+        self.server_address = server_address
+        self.main_scene = MainScene(screen, clock, connected, client_address)
         self.ui_font = pygame.font.SysFont('microsoftyahei', 20)
         self.pause_menu = PauseMenu(screen, self.ui_font)
         self.server_data = None
@@ -54,7 +55,9 @@ class Client:
                 print("[CLIENT] Invalids message format, discarding.")
 
     def send_inputs_to_server(self, inputs=None):
-        self.network_layer.send_to(inputs)
+        if inputs and self.server_address:
+            message = json.dumps(inputs).encode()
+            self.network_layer.send_to(message, self.server_address)
 
     def collect_inputs(self):
         keys = pygame.key.get_pressed()
@@ -67,8 +70,7 @@ class Client:
 
         input_package = {
             "type": "PLAYER_INPUT",
-
-            "data": {
+            "input_data": {  # Changed from "data" to "input_data" to match server
                 # Continuous inputs
                 'w': keys[pygame.K_w],
                 'a': keys[pygame.K_a],
@@ -87,12 +89,11 @@ class Client:
                 '2_pressed': keys[pygame.K_2] and not prev_inputs.get('2', False),
                 'x_pressed': keys[pygame.K_x] and not prev_inputs.get('x', False),
                 'alt_pressed': keys[pygame.K_LALT] and not prev_inputs.get('LAlt', False),
-
-                'timestamp': time.time(),
-            }
+            },
+            "timestamp": time.time(),
         }
 
-        # Store discrete keys for next frame comparison
+        # Store current inputs for next frame comparison
         self.prev_inputs = {
             'r': keys[pygame.K_r],
             't': keys[pygame.K_t],
