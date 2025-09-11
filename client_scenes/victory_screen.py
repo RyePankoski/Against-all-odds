@@ -1,6 +1,7 @@
 import pygame.display
 from game.settings import *
 from ui_components.button import Button
+from shared_util.os_path_routing import get_asset_path
 
 
 class VictoryScreen:
@@ -11,16 +12,16 @@ class VictoryScreen:
         button_width_offset = button_width / 2
         button_height = 100
 
-        self.title_font = pygame.font.Font("../resources/fonts/title_font2.ttf", 100)
+        self.title_font = pygame.font.Font(get_asset_path("assets/fonts/title_font2.ttf"), 100)
         self.title_text = "VICTORY"
         self.title_surface = self.title_font.render(self.title_text, True, GREEN)
         self.title_rect = self.title_surface.get_rect()
         self.title_rect.center = (self.width // 2, 200)
 
         self.buttons = []
-
         new_game_button = Button(self.width / 2 - button_width_offset, self.height / 2, button_width,
                                  button_height, "NEW_GAME?", self.screen, "new_game_button")
+
         self.buttons.append(new_game_button)
         self.state_to_extract = "stay"
 

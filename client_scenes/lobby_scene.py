@@ -34,8 +34,7 @@ class Lobby:
     def run(self, events):
         self.render()
         self.handle_buttons(events)
-        self.listen_for_player_statuses()
-        self.listen_for_start_game()
+        self.listen_for_messages()
 
     def handle_buttons(self, events):
         mouse_pos = pygame.mouse.get_pos()
@@ -64,26 +63,20 @@ class Lobby:
             print("[LOBBY] Player readied, sending to server]")
             self.network_layer.send_to(message, self.server_address)
 
-    def listen_for_player_statuses(self):
+    def listen_for_messages(self):
         message = self.network_layer.listen_for_messages()
         if message is not None:
             data, address = message
             try:
                 data = json.loads(data.decode())
+                print(f"[CLIENT LOBBY] Received message type: {data.get('type', 'UNKNOWN')}")
+                
                 if data["type"] == "PLAYERS_STATUS":
                     self.players = data["players"]
-            except json.JSONDecodeError:
-                print("[CLIENT] Invalid message format, discarding.")
-
-    def listen_for_start_game(self):
-        message = self.network_layer.listen_for_messages()
-        if message is not None:
-            data, address = message
-            try:
-                data = json.loads(data.decode())
-                if data["type"] == "START_GAME":
-                    print("[CLIENT] Servers says to begin.")
-                    if data["?"]:
+                elif data["type"] == "START_GAME":
+                    print("[CLIENT] Server says to begin.")
+                    if data.get("?", False):  # Server actually sends "?": True
+                        print("[CLIENT] Setting start_game = True")
                         self.start_game = True
             except json.JSONDecodeError:
                 print("[CLIENT] Invalid message format, discarding.")

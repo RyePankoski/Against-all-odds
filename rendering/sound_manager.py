@@ -1,12 +1,13 @@
 import pygame
+from shared_util.os_path_routing import get_asset_path
 
 
 class SoundManager:
     def __init__(self):
         self.sounds = {
-            'bullet': pygame.mixer.Sound("../resources/sounds/gunfire.mp3"),
-            'starting_shot': pygame.mixer.Sound("../resources/sounds/starting_shot.mp3"),
-            'rocket': pygame.mixer.Sound("../resources/sounds/rocket.mp3")
+            'bullet': pygame.mixer.Sound(get_asset_path("assets/sounds/gunfire.mp3")),
+            'starting_shot': pygame.mixer.Sound(get_asset_path("assets/sounds/starting_shot.mp3")),
+            'rocket': pygame.mixer.Sound(get_asset_path("assets/sounds/rocket.mp3"))
         }
         self.gunfire_channel = None
         self.rocket_channel = None

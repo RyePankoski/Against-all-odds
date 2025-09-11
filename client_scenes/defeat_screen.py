@@ -1,6 +1,7 @@
 import pygame.display
 from game.settings import *
 from ui_components.button import Button
+from shared_util.os_path_routing import get_asset_path
 
 
 class DefeatScreen:
@@ -11,7 +12,7 @@ class DefeatScreen:
         button_width_offset = button_width / 2
         button_height = 100
 
-        self.title_font = pygame.font.Font("../resources/fonts/title_font2.ttf", 100)
+        self.title_font = pygame.font.Font(get_asset_path("assets/fonts/title_font2.ttf"), 100)
         self.title_text = "DEFEAT"
         self.title_surface = self.title_font.render(self.title_text, True, GREEN)
         self.title_rect = self.title_surface.get_rect()

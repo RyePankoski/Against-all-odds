@@ -83,8 +83,14 @@ class RadarSystem:
 
                 if ray_sector in self.all_asteroids and self.all_asteroids[ray_sector]:
                     for asteroid in self.all_asteroids[ray_sector]:
-                        distance_squared = ((asteroid.x - ray_x) ** 2 +
-                                            (asteroid.y - ray_y) ** 2)
+
+                        if isinstance(asteroid, dict):
+                            x, y = asteroid['x'], asteroid['y']
+                        else:  # Asteroid object
+                            x, y = asteroid.x, asteroid.y
+
+                        distance_squared = ((x - ray_x) ** 2 +
+                                            (y - ray_y) ** 2)
 
                         if distance_squared < self.ray_collision_distance_squared:
                             signatures.append((ray_x, ray_y, WHITE))

@@ -230,15 +230,18 @@ class Ship:
             self.can_reload_rocket = False
 
     def to_dict(self):
-        return {
-            'x': self.x,
-            'y': self.y,
-            'dx' : self.dx,
-            'dy' : self.dy,
-            'shield' : self.shield,
-            'health': self.health,
-            'angle': self.facing_angle,
-            'alive': self.alive,
-            'owner': str(self.owner) if self.owner else None,
-            'sector' : self.sector,
+        result = {
+            'x': int(round(self.x)),
+            'y': int(round(self.y)),
+            'a': int(round(self.facing_angle)),
+            'tp': self.__class__.__name__.lower(),
         }
+
+        # Only include non-zero values
+        if self.dx != 0: result['dx'] = int(round(self.dx))
+        if self.dy != 0: result['dy'] = int(round(self.dy))
+        if self.shield != 100: result['s'] = int(round(self.shield))
+        if self.health != 100: result['h'] = int(round(self.health))
+        if self.owner: result['o'] = str(self.owner)
+
+        return result

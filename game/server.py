@@ -1,6 +1,10 @@
+import gzip
+
 from server_scenes.server_main_scene import ServerMainScene
 import json
 import time
+
+from shared_util.asteroid_logic import get_nearby_asteroids
 
 
 class Server:
@@ -11,12 +15,16 @@ class Server:
         self.connected_players = {}
 
         self.message_queue = []
+        self.input_message_queue = []
         self.player_names = []
 
         self.server_main_scene = None
 
         self.last_heartbeat = time.time()
         self.heartbeat_interval = 1
+
+        self.number_of_messages = 0
+        self.running_average = 0
 
     def run(self, dt):
         self.listen_for_all_messages()
@@ -37,11 +45,9 @@ class Server:
             self.handle_game(dt)
 
     def handle_game(self, dt):
-        input_messages = []
-
-        for message in self.message_queue:
-            if isinstance(message, dict) and 'player_id' in message:
-                input_messages.append(message)
+        # Use input messages from the dedicated input queue
+        input_messages = self.input_message_queue.copy()
+        self.input_message_queue.clear()
 
         game_state = self.server_main_scene.step(input_messages, dt)
 
@@ -63,12 +69,10 @@ class Server:
     # Listen for messages
 
     def listen_for_all_messages(self):
-        # Read ALL available messages, not just one
         while True:
             message = self.network_layer.listen_for_messages()
             if message is not None:
                 self.message_queue.append(message)
-                print(f"[SERVER] Queued message from {message[1]}")
             else:
                 break
 
@@ -78,6 +82,8 @@ class Server:
                 if self.state == "lobby":
                     self.look_for_connection_attempts(message)
                     self.look_for_ready_up(message)
+                elif self.state == "in_game":
+                    self.look_for_player_input(message)
         self.message_queue = []
 
     def look_for_connection_attempts(self, message):
@@ -121,7 +127,7 @@ class Server:
         try:
             data = json.loads(data.decode())
             if data["type"] == "PLAYER_INPUT":
-                self.message_queue.append({
+                self.input_message_queue.append({
                     'player_id': address,
                     'input_data': data['input_data'],
                     'timestamp': data.get('timestamp', time.time())
@@ -158,24 +164,61 @@ class Server:
             self.network_layer.send_to(message, address)
 
     def broadcast_game_state(self, game_state):
+        # Get only nearby asteroids
+        nearby_asteroids = get_nearby_asteroids(game_state['asteroids'], game_state['ships'])
+
         state_to_send = {
-            'type': 'GAME_UPDATE',
-            'ships': [ship.to_dict() for ship in game_state['ships']],
-            'projectiles': [proj.to_dict() for proj in game_state['projectiles']],
-            'asteroids': {f"{key[0]},{key[1]}": [asteroid.to_dict() for asteroid in value] for key, value in
-                          game_state['asteroids'].items()},  # Use this if they're already dicts
-            'explosions': game_state['explosions'],
-            'timestamp': game_state['timestamp'],
-            'collision_events': game_state['collision_events']
+            't': 'gu',
+            's': [ship.to_dict() for ship in game_state['ships']],
+            'p': [
+                {
+                    'x': proj.x,
+                    'y': proj.y,
+                    'sprite_name': proj.__class__.__name__.lower(),
+                    **({'angle': proj.angle} if proj.__class__.__name__.lower() != 'bullet' else {})
+                }
+                for proj in game_state['projectiles'] if proj.alive
+            ],
+            # ensure string keys
+            'a': {f"{sector[0]},{sector[1]}": ast_list for sector, ast_list in nearby_asteroids.items()},
+            'e': game_state['explosions'],
+            'ts': game_state['timestamp'],
+            'c': game_state['collision_events']
         }
 
-        # DEBUG: Print what we're trying to send
-        print("Trying to serialize:")
-        print(f"Ships: {state_to_send['ships']}")
-        print(f"Asteroids: {state_to_send['asteroids']}")
-        print(f"Explosions: {state_to_send['explosions']}")
+        self.round_coordinates(state_to_send)
 
-        message = json.dumps(state_to_send).encode()
+        message = json.dumps(state_to_send)
+        compressed_message = gzip.compress(message.encode())
+
+        size = len(compressed_message)
+
+        self.number_of_messages += 1
+        if self.number_of_messages == 1:
+            self.running_average = size
+        else:
+            self.running_average = ((self.running_average * (
+                    self.number_of_messages - 1)) + size) / self.number_of_messages
+
+        print(f"[SERVER] Running average: {self.running_average:.1f} bytes")
 
         for address in self.connected_players:
-            self.network_layer.send_to(message, address)
+            self.network_layer.send_to(compressed_message, address)
+
+    # Compression
+    def round_coordinates(self, obj):
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                if key in ['x', 'y', 'dx', 'dy', 'a'] and isinstance(value, (int, float)):
+                    obj[key] = int(round(value))
+                elif isinstance(value, (dict, list)):
+                    self.round_coordinates(value)
+
+
+
+        elif isinstance(obj, list):
+            for item in obj:
+                self.round_coordinates(item)
+
+
+

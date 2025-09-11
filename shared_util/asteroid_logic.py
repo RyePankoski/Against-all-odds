@@ -32,7 +32,31 @@ def handle_asteroids(all_asteroids):
     if asteroids_to_remove:
         remove_objects(asteroids_to_remove, all_asteroids)
 
+    empty_sectors = [sector for sector, asteroid_list in all_asteroids.items() if not asteroid_list]
+    for sector in empty_sectors:
+        del all_asteroids[sector]
+
     return sum_of_removed_asteroids
+
+
+def get_nearby_asteroids(all_asteroids, all_ships, radius=CAMERA_VIEW_WIDTH):
+    nearby_asteroids = {}
+    radius_sq = radius ** 2
+    for sector, asteroid_list in all_asteroids.items():
+        filtered = []
+        for asteroid in asteroid_list:
+            if not asteroid.alive:
+                continue
+            for ship in all_ships:
+                dx = ship.x - asteroid.x
+                dy = ship.y - asteroid.y
+                if dx * dx + dy * dy <= radius_sq:
+                    filtered.append({'x': asteroid.x, 'y': asteroid.y, 'radius': asteroid.radius})
+                    break
+
+        if filtered:
+            nearby_asteroids[sector] = filtered
+    return nearby_asteroids
 
 
 def generate_some_asteroids(number_of_asteroids):

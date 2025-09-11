@@ -151,21 +151,60 @@ class WorldRender:
 
     def draw_projectiles(self, projectiles, camera):
         for projectile in projectiles:
-            if camera.is_visible(projectile.x, projectile.y):
-                screen_x, screen_y = camera.world_to_screen(projectile.x, projectile.y)
+            if isinstance(projectile, dict):
+                x, y = projectile['x'], projectile['y']
+                angle = projectile.get('angle', 0)  # Default 0 if no angle
+                sprite_name = projectile.get('sprite_name', 'bullet')
+            else:
+                x, y = projectile.x, projectile.y
+                angle = projectile.angle
+                sprite_name = projectile.__class__.__name__.lower()
 
-                if projectile.scaled_sprite:
-                    rotated_sprite = pygame.transform.rotate(projectile.scaled_sprite, projectile.angle)
-                    rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
-                    self.screen.blit(rotated_sprite, rotated_rect)
+            if camera.is_visible(x, y):
+                screen_x, screen_y = camera.world_to_screen(x, y)
+
+                if sprite_name == 'bullet':
+                    # Just draw a circle - no sprite needed
+                    pygame.draw.circle(self.screen, YELLOW, (screen_x, screen_y), 3)
                 else:
-                    # Fallback with scaled radius
-                    scaled_radius = int(3 * camera.scale_x)
-                    pygame.draw.circle(self.screen, YELLOW, (screen_x, screen_y), scaled_radius)
+                    # Handle other projectiles with sprites and rotation
+                    from rendering.sprite_manager import SpriteManager
+                    base_sprite = SpriteManager.get_sprite(sprite_name)
+
+                    if base_sprite:
+                        if sprite_name == 'rocket':
+                            # Keep original aspect ratio, just scale proportionally
+                            original_size = base_sprite.get_size()
+                            scale_factor = 0.8  # Adjust this to make it bigger/smaller
+                            size = (int(original_size[0] * scale_factor), int(original_size[1] * scale_factor))
+                            sprite = pygame.transform.scale(base_sprite, size)
+                        else:
+                            # Other projectiles
+                            sprite = pygame.transform.scale(base_sprite, (8, 4))
+
+                        rotated_sprite = pygame.transform.rotate(sprite, angle)
+                        rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
+                        self.screen.blit(rotated_sprite, rotated_rect)
+                    else:
+                        # Fallback circle
+                        pygame.draw.circle(self.screen, YELLOW, (screen_x, screen_y), 2)
 
     def draw_ships(self, ships, camera):
+        """Main entry point - delegates to appropriate renderer"""
+        if not ships:
+            return
+
+        # Check if we have dict ships (multiplayer) or object ships (singleplayer)
+        if isinstance(ships[0], dict):
+            self._draw_ships_multiplayer(ships, camera)
+        else:
+            self._draw_ships_singleplayer(ships, camera)
+
+    def _draw_ships_singleplayer(self, ships, camera):
+        """Optimized for local ship objects with full state"""
         for ship in ships:
 
+            # Draw parry effects (only for non-battleships)
             if not isinstance(ship, BattleShip):
                 if ship.is_parrying:
                     pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y), PARRY_RANGE)
@@ -176,34 +215,91 @@ class WorldRender:
             if camera.is_visible(ship.x, ship.y):
                 screen_x, screen_y = camera.world_to_screen(ship.x, ship.y)
 
-                if ship.ship_sprite:
-                    rotated_sprite = pygame.transform.rotate(ship.ship_sprite, ship.facing_angle)
+                # Use cached sprite if available
+                if hasattr(ship, 'ship_sprite') and ship.ship_sprite:
+                    sprite = ship.ship_sprite
+                else:
+                    sprite = self._get_ship_sprite(ship.__class__.__name__.lower(), getattr(ship, 'owner', None))
+
+                if sprite:
+                    rotated_sprite = pygame.transform.rotate(sprite, ship.facing_angle)
                     rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
                     self.screen.blit(rotated_sprite, rotated_rect)
                 else:
-                    print("failed to load ship sprite")
-                    color = GREEN if ship.owner == 1 else RED
-                    pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
+                    self._draw_ship_fallback(screen_x, screen_y, ship.__class__.__name__.lower(),
+                                             getattr(ship, 'owner', None))
 
-                # OPTIMIZED: Use pre-rendered shield surfaces
+                # Shield effects
+                if not isinstance(ship, BattleShip) and ship.shield > 0:
+                    self._draw_shield(screen_x, screen_y, ship.shield)
 
-                if not isinstance(ship, BattleShip):
-                    if ship.shield > 0:
-                        # Find closest pre-rendered alpha level
-                        alpha = max(0, min(255, int(ship.shield)))
-                        closest_alpha = round(alpha / 15) * 15
+    def _draw_ships_multiplayer(self, ships, camera):
+        """Optimized for dict ship data from network"""
+        for ship in ships:
+            x, y = ship['x'], ship['y']
+            facing_angle = ship['angle']
+            ship_type = ship.get('type', 'ship')
+            owner = ship.get('owner')
+            shield = ship.get('shield', 0)
 
-                        if closest_alpha in self.shield_surfaces:
-                            shield_surface = self.shield_surfaces[closest_alpha]
-                            scaled_size = int(50 * self.scale_x)
+            # No parry effects in multiplayer (not sent over network)
 
-                            # Scale if needed (cache these too if scaling becomes expensive)
-                            if scaled_size != 50:
-                                shield_surface = pygame.transform.scale(shield_surface,
-                                                                        (scaled_size * 2, scaled_size * 2))
+            if camera.is_visible(x, y):
+                screen_x, screen_y = camera.world_to_screen(x, y)
 
-                            shield_rect = shield_surface.get_rect(center=(screen_x, screen_y))
-                            self.screen.blit(shield_surface, shield_rect)
+                sprite = self._get_ship_sprite(ship_type, owner)
+
+                if sprite:
+                    rotated_sprite = pygame.transform.rotate(sprite, facing_angle)
+                    rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
+                    self.screen.blit(rotated_sprite, rotated_rect)
+                else:
+                    self._draw_ship_fallback(screen_x, screen_y, ship_type, owner)
+
+                # Shield effects
+                if ship_type != 'battleship' and shield > 0:
+                    self._draw_shield(screen_x, screen_y, shield)
+
+    def _get_ship_sprite(self, ship_type, owner):
+        """Get appropriate sprite for ship type and owner"""
+        from rendering.sprite_manager import SpriteManager
+
+        if ship_type == 'battleship':
+            sprite_name = 'battleship'
+            size = (80, 80)
+        elif owner != getattr(self, '_player_id', None):
+            sprite_name = 'aiShip'
+            size = (40, 40)
+        else:
+            sprite_name = 'ship1'
+            size = (40, 40)
+
+        base_sprite = SpriteManager.get_sprite(sprite_name)
+        return pygame.transform.scale(base_sprite, size) if base_sprite else None
+
+    def _draw_ship_fallback(self, screen_x, screen_y, ship_type, owner):
+        """Fallback circle rendering when sprite fails"""
+        if ship_type == 'battleship':
+            color, radius = PURPLE, 25
+        else:
+            color = GREEN if owner == getattr(self, '_player_id', 1) else RED
+            radius = 15
+        pygame.draw.circle(self.screen, color, (screen_x, screen_y), radius)
+
+    def _draw_shield(self, screen_x, screen_y, shield):
+        """Draw shield effect using pre-rendered surfaces"""
+        alpha = max(0, min(255, int(shield)))
+        closest_alpha = round(alpha / 15) * 15
+
+        if closest_alpha in self.shield_surfaces:
+            shield_surface = self.shield_surfaces[closest_alpha]
+            scaled_size = int(50 * self.scale_x)
+
+            if scaled_size != 50:
+                shield_surface = pygame.transform.scale(shield_surface, (scaled_size * 2, scaled_size * 2))
+
+            shield_rect = shield_surface.get_rect(center=(screen_x, screen_y))
+            self.screen.blit(shield_surface, shield_rect)
 
     def draw_asteroids(self, asteroid_sectors, camera):
         if not asteroid_sectors:  # Handle empty or None dict
@@ -217,12 +313,19 @@ class WorldRender:
                 if asteroid is None:
                     continue
 
-                screen_x, screen_y = camera.world_to_screen(asteroid.x, asteroid.y)
+                if isinstance(asteroid, dict):
+                    x, y = asteroid['x'], asteroid['y']
+                    radius = asteroid['radius']
+                else:  # Asteroid object
+                    x, y = asteroid.x, asteroid.y
+                    radius = asteroid.radius
+
+                screen_x, screen_y = camera.world_to_screen(x, y)
 
                 if 0 <= screen_x <= WORLD_WIDTH and 0 <= screen_y <= WORLD_HEIGHT:
                     pygame.draw.circle(self.screen, DARK_GRAY,
                                        (int(screen_x), int(screen_y)),
-                                       asteroid.radius * self.scale_x)
+                                       radius * self.scale_x)
 
     def draw_ship_data(self, ship):
         # OPTIMIZED: Less sensitive cache key - round positions to reduce cache misses

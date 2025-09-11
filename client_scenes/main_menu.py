@@ -6,6 +6,7 @@ from ui_components.button import Button
 from entities.ships.ship import Ship
 import math
 import pygame
+from shared_util.os_path_routing import get_asset_path
 
 
 def update_ship_facing(ship):
@@ -160,7 +161,7 @@ class MainMenu:
         pygame.draw.circle(self.menu_surface, DARK_GREEN, (self.width // 2, self.height // 2), self.height // 2 - 50)
         pygame.draw.circle(self.menu_surface, GRAY, (self.width // 2, self.height // 2), 5)
 
-        title_font = pygame.font.Font("../resources/fonts/title_font2.ttf", 100)
+        title_font = pygame.font.Font(get_asset_path("assets/fonts/title_font2.ttf"), 100)
         title_text = "AGAINST ALL ODDS"
         title_surface = title_font.render(title_text, True, GREEN)
         title_rect = title_surface.get_rect()

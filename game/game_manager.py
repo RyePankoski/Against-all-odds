@@ -5,6 +5,7 @@ from client_scenes.main_menu import MainMenu
 from client_scenes.lobby_scene import Lobby
 from game.client import Client
 from game.server import Server
+from shared_util.os_path_routing import get_asset_path
 
 import pygame
 import time
@@ -18,7 +19,7 @@ class GameManager:
 
         self.server = None
         self.main_menu = MainMenu(screen)
-        self.splash_screen = SplashScreen(self.screen, "../resources/ui_art/splash.png")
+        self.splash_screen = SplashScreen(self.screen, get_asset_path("assets/ui_art/splash.png"))
         self.game_state = "splash"
 
         # Client-side components (created as needed)
@@ -130,7 +131,7 @@ class GameManager:
     # Setups
 
     def setup_on_single_player(self):
-        self.client = Client(self.screen, self.clock, False, None, None)
+        self.client = Client(self.screen, self.clock, False, None, None, None)
         pygame.mouse.set_visible(False)
 
     def setup_on_create_server(self):

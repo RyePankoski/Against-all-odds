@@ -15,10 +15,6 @@ class ServerMainScene:
         self.explosion_events = []
         self.all_asteroids = generate_some_asteroids(MAX_ASTEROIDS)
         self.current_asteroids = MAX_ASTEROIDS
-
-        battleship = BattleShip(WORLD_WIDTH / 2 + 100, WORLD_HEIGHT / 2 + 100)
-        self.all_ships.append(battleship)
-
         if self.connected_players:
             self.create_player_ships()
 

@@ -10,6 +10,7 @@ from client_scenes.defeat_screen import DefeatScreen
 from rendering.world_render import WorldRender
 from rendering.sound_manager import SoundManager
 from entities.ships.battleship import BattleShip
+import gzip
 
 
 class MainScene:
@@ -237,73 +238,100 @@ class MainScene:
         """Receive input data from client"""
         if isinstance(inputs, dict) and "type" in inputs:
             if inputs["type"] == "PLAYER_INPUT":
-                print("got inputs")
                 self.inputs = inputs["input_data"]  # Changed from "data" to "input_data"
             else:
                 return
         else:
             self.inputs = []
 
-    def inject_server_data(self, server_messages, dt):
+    def inject_server_data(self, message, dt):
         """Handle multiplayer server data"""
-        for message in server_messages:
-            # We need to remove our ship from the server update, so we can use the lerp.
-            server_ships = message.get('ships', [])
 
-            # Update/add ships from server
-            for server_ship in server_ships:
-                if server_ship.owner != self.player_number:  # Compare addresses
-                    for i, local_ship in enumerate(self.all_ships):
-                        if local_ship.owner == server_ship.owner:
-                            self.all_ships[i] = server_ship
-                            break
-                    else:
-                        self.all_ships.append(server_ship)
+        # We need to remove our ship from the server update, so we can use the lerp.
+        server_ships = message.get('s', [])  # Changed from 'ships' to 's'
 
-            server_owners = {ship.owner for ship in server_ships}
-            server_owners.add(self.player_number)  # Keep your own ship
-            self.all_ships = [ship for ship in self.all_ships if ship.owner in server_owners]
+        # Update/add ships from server (convert from dict if needed)
+        for server_ship_data in server_ships:
+            if hasattr(server_ship_data, 'owner'):
+                server_ship = server_ship_data
+            else:
+                server_ship = Ship(server_ship_data['x'], server_ship_data['y'], server_ship_data['o'],
+                                   None)  # Changed 'owner' to 'o'
+                server_ship.dx = server_ship_data.get('dx', 0)
+                server_ship.dy = server_ship_data.get('dy', 0)
+                server_ship.health = server_ship_data.get('h', 100)  # Changed 'health' to 'h'
+                server_ship.shield = server_ship_data.get('s', 100)  # Changed 'shield' to 's'
+                server_ship.facing_angle = server_ship_data.get('a', 0)  # Changed 'angle' to 'a'
 
-            self.all_projectiles = message.get('all_projectiles', self.all_projectiles)
+            ship_owner = server_ship.owner if hasattr(server_ship, 'owner') else server_ship_data[
+                'o']  # Changed 'owner' to 'o'
 
-            if 'asteroids' in message:
-                asteroids = {}
-                for sector_str, asteroid_list in message['asteroids'].items():
-                    x, y = map(int, sector_str.split(','))
-                    sector_key = (x, y)
-                    asteroids[sector_key] = asteroid_list
-                message['asteroids'] = asteroids
+            if ship_owner != self.player_number:  # Compare addresses
+                found = False
+                for i, local_ship in enumerate(self.all_ships):
+                    if local_ship.owner == ship_owner:
+                        self.all_ships[i] = server_ship
+                        found = True
+                        break
+                if not found:
+                    self.all_ships.append(server_ship)
 
-            self.explosion_events.extend(message.get('explosions', []))
+        server_owners = {ship.owner if hasattr(ship, 'owner') else ship['o'] for ship in
+                         server_ships}  # Changed 'owner' to 'o'
+        server_owners.add(self.player_number)  # Keep your own ship
+        self.all_ships = [ship for ship in self.all_ships if ship.owner in server_owners]
 
-            collision_events = message.get('collision_events', [])
-            for collision_event in collision_events:
-                if collision_event['player_id'] == self.player_number:  # Compare with our player_id
-                    print("Server saw a collision")
-                    self.server_saw_collision = True
-                    break
+        # Handle projectiles - convert dict data to objects for rendering
+        if 'p' in message:
+            self.all_projectiles = message['p']  # Changed from 'projectiles' to 'p'
 
-            # Update our ship's health/shield from server
-            ships = message.get('ships', [])
-            for ship in ships:
-                if ship.owner == self.player_number:  # Find our ship
-                    if self.ship:  # Make sure we have a ship
-                        self.ship.shield = ship.shield
-                        self.ship.health = ship.health
-                        self.interpolate(ship, dt)
-                    break
+        if 'a' in message:
+            asteroids = {}
+            for sector_str, asteroid_list in message['a'].items():  # Changed from 'asteroids' to 'a'
+                x, y = map(float, sector_str.split(','))
+                sector_key = (int(x), int(y))
+                asteroids[sector_key] = asteroid_list  # Just use the dicts directly
+            self.all_asteroids = asteroids
 
-    def interpolate(self, ship, dt):
+        self.explosion_events.extend(message.get('e', []))  # Changed from 'explosions' to 'e'
+
+        collision_events = message.get('c', [])  # Changed from 'collision_events' to 'c'
+        for collision_event in collision_events:
+            if collision_event['player_id'] == self.player_number:  # Compare with our player_id
+                print("Server saw a collision")
+                self.server_saw_collision = True
+                break
+
+        # Update our ship's health/shield from server
+        ships = message.get('s', [])
+        for ship_data in ships:
+            ship_owner = ship_data.owner if hasattr(ship_data, 'owner') else ship_data['o']  # Changed 'owner' to 'o'
+            if ship_owner == self.player_number:  # Find our ship
+                if self.ship:  # Make sure we have a ship
+                    self.ship.shield = ship_data.shield if hasattr(ship_data, 'shield') else ship_data.get('s',
+                                                                                                           100)  # Changed 'shield' to 's'
+                    self.ship.health = ship_data.health if hasattr(ship_data, 'health') else ship_data.get('h',
+                                                                                                           100)  # Changed 'health' to 'h'
+                    self.interpolate(ship_data, dt)
+                break
+
+    def interpolate(self, ship_data, dt):
         """Interpolate player ship position for multiplayer with smooth predictive correction."""
         # Base parameters
         position_error_margin = 75
         velocity_error_margin = 50
-        correction_strength = 0.01
+        correction_strength = 0.025
         periodic_correction_strength = 0.05
 
+        # Extract values from ship data (could be dict or object)
+        ship_x = ship_data.x if hasattr(ship_data, 'x') else ship_data['x']
+        ship_y = ship_data.y if hasattr(ship_data, 'y') else ship_data['y']
+        ship_dx = ship_data.dx if hasattr(ship_data, 'dx') else ship_data.get('dx', 0)
+        ship_dy = ship_data.dy if hasattr(ship_data, 'dy') else ship_data.get('dy', 0)
+
         # Predict server position based on velocity
-        predicted_x = ship.x + ship.dx * dt
-        predicted_y = ship.y + ship.dy * dt
+        predicted_x = ship_x + ship_dx * dt
+        predicted_y = ship_y + ship_dy * dt
 
         # Periodic stronger correction every 120 frames
         if self.frame % 120 == 0:
@@ -314,8 +342,8 @@ class MainScene:
 
         x_error = predicted_x - self.ship.x
         y_error = predicted_y - self.ship.y
-        dx_error = ship.dx - self.ship.dx
-        dy_error = ship.dy - self.ship.dy
+        dx_error = ship_dx - self.ship.dx
+        dy_error = ship_dy - self.ship.dy
 
         x_diff = abs(x_error)
         y_diff = abs(y_error)
@@ -323,7 +351,7 @@ class MainScene:
         dy_diff = abs(dy_error)
 
         if x_diff > position_error_margin or y_diff > position_error_margin:
-            print("Correcting pos")
+            # print("Correcting pos")
             scale = min(1.0, max(x_diff, y_diff) / position_error_margin)
             self.ship.x += x_error * correction_strength * scale
             self.ship.y += y_error * correction_strength * scale
@@ -333,7 +361,7 @@ class MainScene:
 
         # Velocity correction
         if dx_diff > velocity_error_margin or dy_diff > velocity_error_margin:
-            print("Correcting vel")
+            # print("Correcting vel")
             scale = min(1.0, max(dx_diff, dy_diff) / velocity_error_margin)
             self.ship.dx += dx_error * correction_strength * scale
             self.ship.dy += dy_error * correction_strength * scale
@@ -343,8 +371,8 @@ class MainScene:
 
         if self.server_saw_collision:
             print("Accepting dx dy from server state.")
-            self.ship.dx = ship.dx
-            self.ship.dy = ship.dy
+            self.ship.dx = ship_dx
+            self.ship.dy = ship_dy
             self.server_saw_collision = False
 
     def handle_sounds(self, inputs):

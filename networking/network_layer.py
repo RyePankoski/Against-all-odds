@@ -10,9 +10,16 @@ class NetworkLayer:
 
     def start(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        original_size = self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+        print(f"Original buffer size: {original_size}")
+
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 65536)
+
+        new_size = self.socket.getsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF)
+        print(f"New buffer size: {new_size}")
 
         if self.bind_socket:
-            self.socket.bind((self.host, self.port))
+            self.socket.bind(('0.0.0.0', self.port))
             bound_address = self.socket.getsockname()
             print(f"Server socket bound to {bound_address[0]}:{bound_address[1]}")
         else:
@@ -28,7 +35,7 @@ class NetworkLayer:
         if not self.socket:
             return None
         try:
-            data, address = self.socket.recvfrom(1024)
+            data, address = self.socket.recvfrom(65536)
             return data, address
         except socket.timeout:
             return None  # No data available

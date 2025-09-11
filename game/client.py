@@ -4,6 +4,7 @@ from client_scenes.pause_menu import PauseMenu
 import pygame
 import json
 import time
+import gzip
 
 
 class Client:
@@ -45,14 +46,17 @@ class Client:
         if message is not None:
             data, address = message
             try:
-                message = json.loads(data.decode())
+                # Decompress and parse
+                decompressed_data = gzip.decompress(data)
+                json_str = decompressed_data.decode('utf-8')
+                message = json.loads(json_str)
 
-                if message['type'] == "GAME_UPDATE":
-                    self.main_scene.inject_server_data(data, dt)
+                if message['t'] == "gu":
+                    self.main_scene.inject_server_data(message, dt)  # Pass parsed dict
                 else:
                     pass
-            except json.decoder.JSONDecodeError:
-                print("[CLIENT] Invalids message format, discarding.")
+            except Exception as e:
+                print(f"[CLIENT] Error processing message: {e}")
 
     def send_inputs_to_server(self, inputs=None):
         if inputs and self.server_address:

@@ -1,4 +1,3 @@
-from networking.network_simulator import NetworkSimulator
 from game.game_manager import GameManager
 import cProfile
 import pstats
