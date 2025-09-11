@@ -40,4 +40,4 @@ if __name__ == "__main__":
         pr.disable()
         stats = pstats.Stats(pr)
         stats.sort_stats('tottime')
-        stats.print_stats(20)
+        # stats.print_stats(20)

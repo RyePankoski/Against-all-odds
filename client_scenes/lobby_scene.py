@@ -1,22 +1,26 @@
-import pygame
 from rendering.sprite_manager import SpriteManager
-from game.settings import *
 from ui_components.button import Button
+from game.settings import *
+
+import pygame
 
 
 class Lobby:
-    def __init__(self, screen):
+    def __init__(self, screen, network_layer):
         self.screen = screen
+        self.network_layer = network_layer
+        self.max_players = 10
+        self.player_ready = False
+
         self.width, self.height = pygame.display.get_desktop_sizes()[0]
-        self.buttons = []
-        self.input_boxes = []
-        self.players = []
         self.font = pygame.font.SysFont(None, 36)
         self.title_font = pygame.font.SysFont(None, 48)
-        self.init_components()
-        self.max_players = 10
         self.ship_sprite = SpriteManager.get_sprite("ship1")
-        self.player_ready = False
+
+        self.input_boxes = []
+        self.buttons = []
+        self.players = []
+        self.init_components()
 
     def set_players(self, players):
         self.players = players
@@ -24,7 +28,6 @@ class Lobby:
     def run(self, events):
         self.render()
         self.handle_buttons(events)
-
 
     def render(self):
         # Title
@@ -80,7 +83,9 @@ class Lobby:
                 if button.button_id == "ready_up_button":
                     self.player_ready = True
 
-
     def init_components(self):
         ready_up_button = Button(self.width - 200, 200, 200, 100, "READY", self.screen, "ready_up_button")
         self.buttons.append(ready_up_button)
+
+    def add_player(self, player):
+        self.players.append(player)

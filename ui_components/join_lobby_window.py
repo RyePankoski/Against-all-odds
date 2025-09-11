@@ -12,7 +12,6 @@ class JoinLobbyWindow:
         self.name_box = InputBox(self.width / 2 - 100, self.height / 2 - 200, 200, 100, screen)
         self.number = None
         self.name = None
-        self.done = False
         self.open = True
 
     def run(self, dt, events):
@@ -27,9 +26,6 @@ class JoinLobbyWindow:
                 try:
                     self.number = self.ip_box.text
                     self.name = self.name_box.text
-                    print(f"Got number: {self.number}")
-                    self.done = True
+                    print(f"got number: {self.number}, name: {self.name}")
                 except ValueError:
                     print("Invalid input, not a number")
-
-

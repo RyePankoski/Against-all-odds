@@ -20,7 +20,7 @@ class ServerMainScene:
         battleship = BattleShip(WORLD_WIDTH / 2 + 100, WORLD_HEIGHT / 2 + 100)
         self.all_ships = [ship1, ship2, battleship]
 
-    def step(self, dt, input_messages):
+    def step(self, input_messages, dt):
 
         for message in input_messages:
             player_id = message.get('player_id')

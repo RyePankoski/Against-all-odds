@@ -87,14 +87,10 @@ class Ship:
 
         self.ai_ships = ["aiShip", "aiShip2", "aiShip3", "aiShip4"]
 
-        if owner == 1:
-            sprite_name = 'ship1'
-        elif owner == 2:
-            sprite_name = 'ship2'
-        elif owner == -1:
+        if owner == -1:
             sprite_name = random.choice(self.ai_ships)
         else:
-            sprite_name = None
+            sprite_name = "ship1"
 
         # Get original sprite and scale it once
         original_sprite = SpriteManager.get_sprite(sprite_name)
@@ -181,46 +177,46 @@ class Ship:
         if self.power < SHIP_POWER:
             self.power += 0.04
 
-        if self.can_fire_rocket is False:
+        if not self.can_fire_rocket:
             self.fire_rocket_timer += dt
             if self.fire_rocket_timer > self.fire_rocket_cooldown:
                 self.can_fire_rocket = True
                 self.firing_a_weapon = False
                 self.fire_rocket_timer = 0
-        if self.can_fire_bullet is False:
+        if not self.can_fire_bullet:
             self.fire_bullet_timer += dt
             if self.fire_bullet_timer > self.fire_bullet_cooldown:
                 self.can_fire_bullet = True
                 self.firing_a_weapon = False
                 self.fire_bullet_timer = 0
-        if self.can_shield_recharge is False:
+        if not self.can_shield_recharge:
             self.shield_pause_timer += dt
             if self.shield_pause_timer > self.shield_pause_length:
                 self.can_shield_recharge = True
                 self.shield_pause_timer = 0
-        if self.can_reload_rocket is False:
+        if not self.can_reload_rocket:
             self.rocket_recharge_time += dt
             if self.rocket_recharge_time > self.rocket_recharge_length:
                 self.can_reload_rocket = True
                 self.rocket_recharge_time = 0
-        if self.can_reload_bullet is False:
+        if not self.can_reload_bullet:
             self.bullet_recharge_timer += dt
             if self.bullet_recharge_timer > self.bullet_recharge_length:
                 self.can_reload_bullet = True
                 self.bullet_recharge_timer = 0
-        if self.can_radar_pulse is False:
+        if not self.can_radar_pulse:
             self.can_pulse_timer += dt
             if self.can_pulse_timer > self.can_pulse_cooldown:
                 self.can_radar_pulse = True
                 self.can_pulse_timer = 0
 
-        if self.can_parry is False:
+        if not self.can_parry:
             self.can_parry_timer += dt
             if self.can_parry_timer > self.can_parry_timer_cooldown:
                 self.can_parry = True
                 self.can_parry_timer = 0
 
-        if self.is_parrying is True:
+        if self.is_parrying:
             self.active_parry_timer += dt
             if self.active_parry_timer >= self.active_parry_cooldown:
                 self.is_parrying = False

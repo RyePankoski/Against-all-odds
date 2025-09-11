@@ -1,6 +1,8 @@
 import pygame
 
 from game.settings import *
+
+
 class InputBox:
     def __init__(self, x, y, width, height, screen):
         self.screen = screen
@@ -68,6 +70,7 @@ class InputBox:
                     self.txt_surface = self.font.render(self.text, True, pygame.Color('black'))
 
             return None
+        return None
 
     def draw(self):
         # Draw the input box rectangle

@@ -13,13 +13,12 @@ from entities.ships.battleship import BattleShip
 
 
 class MainScene:
-    def __init__(self, screen, clock, connected, player_number):
+    def __init__(self, screen, clock, connected):
         self.ship = None
         self.screen = screen
         self.clock = clock
         self.connected = connected
-        self.player_number = player_number
-
+        self.player_number = random.randint(0, 1000)
 
         # Game state
         self.victory = False
@@ -88,7 +87,8 @@ class MainScene:
                     None
                 )
                 self.all_ships.append(ai_ship)
-                ai = AI(ai_ship, self.ship, self.all_ships, self.all_asteroids, self.ai_difficulty, self.screen, self.camera)
+                ai = AI(ai_ship, self.ship, self.all_ships, self.all_asteroids, self.ai_difficulty, self.screen,
+                        self.camera)
                 self.all_ai.append(ai)
 
     def run(self, dt):
@@ -159,8 +159,6 @@ class MainScene:
             for _ in range(asteroid_diff):
                 spawn_single_asteroid(self.all_asteroids)
                 self.current_asteroids += 1
-
-        print(f"{self.current_asteroids}")
 
         # Collect projectiles from ships
         self.collect_projectiles()
@@ -234,7 +232,14 @@ class MainScene:
 
     def inject_inputs(self, inputs):
         """Receive input data from client"""
-        self.inputs = inputs
+        if isinstance(inputs, dict) and "type" in inputs:
+            if inputs["type"] == "PLAYER_INPUT":
+                print("got inputs")
+                self.inputs = inputs["data"]
+            else:
+                return
+        else:
+            self.inputs = []
 
     def inject_server_data(self, server_messages, dt):
         """Handle multiplayer server data"""

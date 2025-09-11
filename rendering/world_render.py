@@ -9,11 +9,11 @@ from entities.projectiles.rocket import Rocket
 def generate_star_tiles():
     """Generate pre-rendered star tile surfaces"""
     tiles = []
-    MIN_STAR_SIZE = 1
-    MAX_STAR_SIZE = 5
-    NUM_TILE_VARIATIONS = 10
+    min_star_size = 1
+    max_star_size = 5
+    num_tile_variations = 10
 
-    for tile_id in range(NUM_TILE_VARIATIONS):
+    for tile_id in range(num_tile_variations):
         # Create transparent surface for this tile
         tile_surface = pygame.Surface((TILE_SIZE, TILE_SIZE), pygame.SRCALPHA)
         # Use tile_id as seed for consistent patterns
@@ -22,7 +22,7 @@ def generate_star_tiles():
         for _ in range(20):
             x = tile_random.randint(0, TILE_SIZE - 1)
             y = tile_random.randint(0, TILE_SIZE - 1)
-            size = tile_random.uniform(MIN_STAR_SIZE, MAX_STAR_SIZE)
+            size = tile_random.uniform(min_star_size, max_star_size)
             pygame.draw.circle(tile_surface, WHITE, (x, y), int(size))
         tiles.append(tile_surface)
 
@@ -170,7 +170,8 @@ class WorldRender:
                 if ship.is_parrying:
                     pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y), PARRY_RANGE)
                 elif ship.can_parry:
-                    pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y), PARRY_RANGE - 10, 2)
+                    pygame.draw.circle(self.screen, BRIGHT_BLUE, camera.world_to_screen(ship.x, ship.y),
+                                       PARRY_RANGE - 10, 2)
 
             if camera.is_visible(ship.x, ship.y):
                 screen_x, screen_y = camera.world_to_screen(ship.x, ship.y)
@@ -180,6 +181,7 @@ class WorldRender:
                     rotated_rect = rotated_sprite.get_rect(center=(screen_x, screen_y))
                     self.screen.blit(rotated_sprite, rotated_rect)
                 else:
+                    print("failed to load ship sprite")
                     color = GREEN if ship.owner == 1 else RED
                     pygame.draw.circle(self.screen, color, (screen_x, screen_y), 15)
 
@@ -223,9 +225,6 @@ class WorldRender:
                                        asteroid.radius * self.scale_x)
 
     def draw_ship_data(self, ship):
-        if ship.owner != 1:
-            return
-
         # OPTIMIZED: Less sensitive cache key - round positions to reduce cache misses
         speed = math.sqrt(ship.dx ** 2 + ship.dy ** 2)
         boost_fuel_percent = int((ship.current_boost_fuel / BOOST_FUEL) * 100)
