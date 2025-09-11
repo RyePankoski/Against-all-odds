@@ -1,1 +1,0 @@
-pyinstaller --onefile --add-data "C:\Users\frank\Documents\Against all odds\assets:assets" main.py
