@@ -13,19 +13,18 @@ A complete client-server multiplayer system built from scratch in Python, demons
 - Deterministic physics simulation ensuring client-server state consistency
 - Message queue system processing client inputs with sub-40ms response times
 
-**Advanced Lag Compensation**
+**Lag Compensation**
 - Input timestamping with server-side validation and rollback
-- Control theory-based interpolation (lerp) system for smooth client prediction
-- Collision detection with server authority override for critical events
+- Control theory interpolation system for smooth client prediction
 
 **Scalable Game Architecture** 
-- Modular scene management: GameManager → Client → Scene hierarchy
-- Dynamic AI system capable of running 40+ intelligent agents simultaneously
+- Modular scene management: GameManager can instantiate different clients per need
+- AI system capable of running 40+ agents simultaneously
 - Clean separation between rendering, networking, and game logic
 
 ## Live Demo Features
 
-**Single Player**: Fight against intelligent AI opponents with complex behavior patterns
+**Single Player**: Fight against AI opponents with complex behavior patterns
 **Multiplayer**: Connect via IP to lobby system with customizable game parameters
 **Real-time Combat**: Ships, projectiles, asteroids with physics-based destruction
 **Advanced Systems**: Radar detection, weapon management, shield regeneration
@@ -33,23 +32,19 @@ A complete client-server multiplayer system built from scratch in Python, demons
 ## System Architecture
 <img width="1220" height="673" alt="against_all_odds drawio" src="https://github.com/user-attachments/assets/a9c4e8b2-3cd5-40ba-bece-c2b62c4cc178" />
 
-```
-
-The networking layer simulates realistic latency (20-200ms) for testing.
 
 ## Technical Implementation
 
-**Built from Scratch**: 6,200+ lines of custom Python code
+**Built from Scratch**: 10,000+ lines of custom Python code
 **Networking**: Raw socket implementation with custom protocol
-**Performance**: Handles 60 players server-side, 40 AI agents client-side
+**Performance**: Can handle around 10 players online, 40 AI agents client-side
 **Architecture**: Message-driven design with deterministic shared logic
 
 ### Key Technical Challenges Solved
 
 1. **State Synchronization**: Maintaining consistent world state across multiple clients with varying latencies
-2. **Input Validation**: Server-side input processing with timestamp verification to prevent cheating
+2. **Input Validation**: Server-side input processing with timestamp verification
 3. **Smooth Interpolation**: Advanced lerp system using control theory for responsive client prediction
-4. **Memory Management**: Efficient entity lifecycle management for players joining/leaving mid-game
 
 ## Installation & Usage
 
@@ -63,7 +58,6 @@ python main.py
 - **Backend Systems**: Authoritative server design patterns used in production games
 - **Network Programming**: Custom protocols and lag compensation techniques
 - **Performance Engineering**: Concurrent player handling and optimization strategies  
-- **Software Architecture**: Clean separation of concerns across 6k+ lines of code
 
 Perfect foundation for extending to features like advanced lag compensation, rollback networking, and anti-cheat systems.
 
