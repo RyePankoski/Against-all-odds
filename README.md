@@ -31,13 +31,8 @@ A complete client-server multiplayer system built from scratch in Python, demons
 **Advanced Systems**: Radar detection, weapon management, shield regeneration
 
 ## System Architecture
+<img width="1220" height="673" alt="against_all_odds drawio" src="https://github.com/user-attachments/assets/a9c4e8b2-3cd5-40ba-bece-c2b62c4cc178" />
 
-```
-Client ←→ Network Layer ←→ Authoritative Server
-  ↓           ↓                    ↓
-Rendering   Message Queue      Game Logic
-Input       Lag Simulation     State Authority
-Lerp        Bandwidth Mgmt     Collision Detection
 ```
 
 The networking layer simulates realistic latency (20-200ms) for testing.
