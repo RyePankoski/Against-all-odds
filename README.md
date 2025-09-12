@@ -36,8 +36,12 @@ A complete client-server multiplayer system built from scratch in Python, demons
 ## Technical Implementation
 
 **Built from Scratch**: 10,000+ lines of custom Python code
+
+
 **Networking**: Raw socket implementation with custom protocol
+
 **Performance**: Can handle around 10 players online, 40 AI agents client-side
+
 **Architecture**: Message-driven design with deterministic shared logic
 
 ### Key Technical Challenges Solved
